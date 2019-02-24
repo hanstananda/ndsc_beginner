@@ -15,7 +15,7 @@ class Category:
     def __init__(self):
         pass
 
-    def get_category_id(self, class_name):
+    def get_category_id(self, class_name    ):
         return self.beauty_subcategory[class_name]
 
 
@@ -31,21 +31,22 @@ class Data:
         return files
 
 
-def load_train(train_path, image_size, classes):
+def load_train(train_path, image_size, classes, limit=10):
     images = []
     labels = []
     img_names = []
     cls = []
-    data = Data
-    category = Category
+    data = Data()
+    cat = Category()
 
     print('Going to read training images')
     for fields in classes:
         index = classes.index(fields)
         print('Now going to read {} files (Index: {})'.format(fields, index))
-        files = data.get_files(Category.get_category_id(classes))
+        files = [train_path + s for s in data.get_files(cat.get_category_id(fields))]
+        counter = 0
         for fl in files:
-            f1 = train_path + f1
+            # print(fl)
             image = cv2.imread(fl)
             image = cv2.resize(image, (image_size, image_size), 0, 0, cv2.INTER_LINEAR)
             image = image.astype(np.float32)
@@ -57,6 +58,10 @@ def load_train(train_path, image_size, classes):
             flbase = os.path.basename(fl)
             img_names.append(flbase)
             cls.append(fields)
+
+            counter+=1
+            if counter>limit:
+                break
     images = np.array(images)
     labels = np.array(labels)
     img_names = np.array(img_names)

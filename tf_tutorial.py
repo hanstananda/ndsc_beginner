@@ -5,7 +5,7 @@ import dataset
 
 train_data = pd.read_csv("train.csv")
 train_data.sort_values('Category')
-print(train_data.head(5))
+# print(train_data.head(5))
 test_data = pd.read_csv("test.csv")
 categories_file = open("categories.json", "r")
 categories = json.load(categories_file)
