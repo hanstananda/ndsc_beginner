@@ -1,7 +1,7 @@
 from keras.preprocessing.image import ImageDataGenerator
 from keras.applications.resnet50 import preprocess_input
 
-TRAIN_DIR = "../mobile_image"
+TRAIN_DIR = "../fashion_image"
 HEIGHT = 300
 WIDTH = 300
 BATCH_SIZE = 8

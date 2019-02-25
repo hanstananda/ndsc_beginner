@@ -1,5 +1,7 @@
 from keras.layers import Dense, Activation, Flatten, Dropout
 from keras.models import Sequential, Model
+from pandas._libs import json
+
 from loading_models import base_model
 
 
@@ -22,35 +24,17 @@ def build_finetune_model(base_model, dropout, fc_layers, num_classes):
     return finetune_model
 
 
-class_list = [
-    "Advan",
-    "Alcatel",
-    "Asus",
-    "Blackberry",
-    "Brandcode",
-    "Evercross",
-    "Honor",
-    "Huawei",
-    "Icherry",
-    "Infinix",
-    "Iphone",
-    "Lenovo",
-    "Maxtron",
-    "Mito",
-    "Motorola",
-    "Nokia",
-    "Oppo",
-    "Others Mobile & Tablet",
-    "Realme",
-    "Samsung",
-    "Sharp",
-    "Smartfren",
-    "Sony",
-    "SPC",
-    "Strawberry",
-    "Vivo",
-    "Xiaomi"
-]
+class_list = []
+
+categories_file = open("categories.json", "r")
+categories = json.load(categories_file)
+category = 'Fashion'
+
+for names in categories[category]:
+    class_list.append(names)
+
+
+
 FC_LAYERS = [1024, 1024]
 dropout = 0.5
 
