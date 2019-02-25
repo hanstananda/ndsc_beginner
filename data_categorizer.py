@@ -9,9 +9,13 @@ categories = json.load(categories_file)
 train_data = pd.read_csv("train.csv")
 train_data.sort_values('Category')
 train_path = '../'
+destination_path = '../selected/'
 classes = []
 # category = 'Mobile'
-category = 'Beauty'
+# category = 'Beauty'
+category = 'Fashion'
+
+limit = 1000
 
 
 def get_category_id(class_name):
@@ -32,18 +36,20 @@ for fields in classes:
     print('Now going to read {} files (Index: {})'.format(fields, index))
     files = get_files(get_category_id(fields))
     subcategory = files[0].split('/')[0]
-    if not os.path.exists(os.path.join(train_path, subcategory, fields)):
-        os.mkdir(os.path.join(train_path, subcategory, fields))
+    if not os.path.exists(os.path.join(destination_path, subcategory, fields)):
+        os.mkdir(os.path.join(destination_path, subcategory, fields))
         print("New folder created!")
     counter = 0
     for fl in files:
         src = os.path.join(train_path, fl)
         tmp = fl.split('/')
-        des = os.path.join(train_path, tmp[0], fields, tmp[1])
+        des = os.path.join(destination_path, tmp[0], fields, tmp[1])
         # print(des)
         copyfile(src, des)
         # print(src)
         counter += 1
+        if counter > limit:
+            break
 
     print(counter)
 
