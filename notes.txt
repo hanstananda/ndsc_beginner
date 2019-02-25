@@ -1,0 +1,2 @@
+https://towardsdatascience.com/transfer-learning-for-image-classification-using-keras-c47ccf09c8c8
+https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html
