@@ -9,7 +9,7 @@ categories = json.load(categories_file)
 train_data = pd.read_csv("train.csv")
 train_data.sort_values('Category')
 train_path = '../'
-destination_path = '../selected/'
+destination_path = '../'
 classes = []
 # category = 'Mobile'
 # category = 'Beauty'
@@ -31,6 +31,8 @@ def get_files(fid):
 for names in categories[category]:
     classes.append(names)
 
+idx = 0
+
 for fields in classes:
     index = classes.index(fields)
     print('Now going to read {} files (Index: {})'.format(fields, index))
@@ -40,7 +42,10 @@ for fields in classes:
         os.mkdir(os.path.join(destination_path, subcategory, fields))
         print("New folder created!")
     counter = 0
+    idx += 1
     for fl in files:
+        if ".jpg" not in fl:  # fix typos
+            fl = fl+".jpg"
         src = os.path.join(train_path, fl)
         tmp = fl.split('/')
         des = os.path.join(destination_path, tmp[0], fields, tmp[1])
