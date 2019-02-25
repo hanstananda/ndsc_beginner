@@ -10,10 +10,13 @@ train_data = pd.read_csv("train.csv")
 train_data.sort_values('Category')
 train_path = '../'
 classes = []
+# category = 'Mobile'
+category = 'Beauty'
 
 
 def get_category_id(class_name):
-    return categories['Mobile'][class_name]
+    return categories[category][class_name]
+
 
 def get_files(fid):
     rows = train_data.loc[train_data['Category'] == fid]
@@ -21,7 +24,7 @@ def get_files(fid):
     return files
 
 
-for names in categories['Mobile']:
+for names in categories[category]:
     classes.append(names)
 
 for fields in classes:
@@ -38,7 +41,7 @@ for fields in classes:
         tmp = fl.split('/')
         des = os.path.join(train_path, tmp[0], fields, tmp[1])
         # print(des)
-        copyfile(src,des)
+        copyfile(src, des)
         # print(src)
         counter += 1
 
