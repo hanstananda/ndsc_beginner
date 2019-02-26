@@ -72,7 +72,7 @@ plt.ylabel("Accuracy")
 plt.xlabel("Training Steps")
 plt.ylim([0,1])
 plt.plot(batch_stats.batch_acc)
-
+plt.show()
 
 label_names = sorted(image_data.class_indices.items(), key=lambda pair:pair[1])
 label_names = np.array([key.title() for key, value in label_names])
@@ -80,14 +80,14 @@ label_names = np.array([key.title() for key, value in label_names])
 result_batch = model.predict(image_batch)
 labels_batch = label_names[np.argmax(result_batch, axis=-1)]
 
-plt.figure(figsize=(10,9))
-for n in range(30):
-    plt.subplot(6,5,n+1)
-    plt.imshow(image_batch[n])
-    plt.title(labels_batch[n])
-    plt.axis('off')
-    _ = plt.suptitle("Model predictions")
-    plt.show()
+# plt.figure(figsize=(10,9))
+# for n in range(30):
+#     plt.subplot(6,5,n+1)
+#     plt.imshow(image_batch[n])
+#     plt.title(labels_batch[n])
+#     plt.axis('off')
+#     _ = plt.suptitle("Model predictions")
+#     plt.show()
 
-export_path = tf.contrib.saved_model.save_keras_model(model, "")
+export_path = tf.contrib.saved_model.save_keras_model(model, "../checkpoints/")
 export_path
