@@ -7,7 +7,7 @@ import tensorflow.keras.backend as K
 
 from tensorflow.keras import layers
 
-data_root = "../fashion_image/"
+data_root = "../../fashion_image/"
 
 image_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1/255)
 image_data = image_generator.flow_from_directory(str(data_root))

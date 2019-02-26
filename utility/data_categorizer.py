@@ -4,16 +4,16 @@ from shutil import copyfile
 import pandas as pd
 
 
-categories_file = open("categories.json", "r")
+categories_file = open("../data/categories.json", "r")
 categories = json.load(categories_file)
-train_data = pd.read_csv("train.csv")
+train_data = pd.read_csv("../data/train.csv")
 train_data.sort_values('Category')
-train_path = '../'
-destination_path = '../'
+train_path = '../../'
+destination_path = '../../'
 classes = []
-# category = 'Mobile'
+category = 'Mobile'
 # category = 'Beauty'
-category = 'Fashion'
+# category = 'Fashion'
 
 limit = 1000
 
