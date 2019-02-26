@@ -27,7 +27,10 @@ all_subcategories = {k.lower(): v for k, v in categories['Mobile'].items()}
 all_subcategories.update({k.lower(): v for k, v in categories['Fashion'].items()})
 all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()})
 
+gen_test = False
+
 print(all_subcategories)
+print("no of categories: "+str(len(all_subcategories)))
 
 category_mapping = {
     'fashion_image': 'Fashion',
@@ -65,15 +68,15 @@ except:
         trainData.to_csv(path_or_buf='train_with_cname.csv', index=False)
 
 
-max_data_size = int(len(trainData) * .1)
-train_size = int(max_data_size * .8)
+max_data_size = int(len(trainData) * 1)
+train_size = int(max_data_size * .9)
 print(train_size)
 print(max_data_size)
 
-train_texts = trainData['title'][:train_size]
-train_tags = trainData['item_category'][:train_size]
-validate_texts = trainData['title'][train_size:max_data_size]
-validate_tags = trainData['item_category'][train_size:max_data_size]
+train_texts = trainData['title']
+train_tags = trainData['item_category']
+validate_texts = trainData['title'][::max_data_size//100]
+validate_tags = trainData['item_category'][::max_data_size//100]
 test_texts = testData['title']
 
 max_words = 1000
@@ -97,20 +100,21 @@ print(len(y_validate))
 
 # Converts the labels to a one-hot representation
 num_classes = np.max(y_train) + 1
+print("num classes:", num_classes)
 y_train = utils.to_categorical(y_train, num_classes)
 y_validate = utils.to_categorical(y_validate, num_classes)
 
 # Inspect the dimenstions of our training and test data (this is helpful to debug)
 print('x_train shape:', x_train.shape)
-print('x_test shape:', x_validate.shape)
+print('x_validate shape:', x_validate.shape)
 print('y_train shape:', y_train.shape)
-print('y_test shape:', y_validate.shape)
+print('y_validate shape:', y_validate.shape)
 
 # This model trains very quickly and 2 epochs are already more than enough
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
-batch_size = 32
-epochs = 2
+batch_size = 128
+epochs = 25
 
 # Build the model
 model = Sequential()
@@ -140,6 +144,7 @@ score = model.evaluate(x_validate, y_validate,
                        batch_size=batch_size, verbose=1)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
+print(score)
 
 # Here's how to generate a prediction on individual examples
 text_labels = encoder.classes_
@@ -151,19 +156,21 @@ text_labels = encoder.classes_
 #     print('Actual label:' + validate_tags.iloc[i])
 #     print("Predicted label: " + predicted_label + "\n")
 
+def perform_test():
+    indexes = []
+    results = []
 
-indexes = []
-results = []
+    for i, row in testData.iterrows():
+        prediction = model.predict(np.array([x_test[i]]))
+        predicted_label = text_labels[np.argmax(prediction)]
+        label_id = all_subcategories[predicted_label]
+        indexes.append(row["itemid"])
+        results.append(label_id)
 
-for i, row in testData.iterrows():
-    prediction = model.predict(np.array([x_test[i]]))
-    predicted_label = text_labels[np.argmax(prediction)]
-    label_id = all_subcategories[predicted_label]
-    indexes.append(row["itemid"])
-    results.append(label_id)
-
-df = pd.DataFrame({'itemid': indexes, 'Category': results})
-df.to_csv(path_or_buf='res2.csv', index=False)
+    df = pd.DataFrame({'itemid': indexes, 'Category': results})
+    df.to_csv(path_or_buf='res6.csv', index=False)
+if gen_test:
+    perform_test()
 
 
 # This utility function is from the sklearn docs: http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
