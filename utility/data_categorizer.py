@@ -11,11 +11,11 @@ train_data.sort_values('Category')
 train_path = '../../'
 destination_path = '../../'
 classes = []
-category = 'Mobile'
-# category = 'Beauty'
+# category = 'Mobile'
+category = 'Beauty'
 # category = 'Fashion'
 
-limit = 1000
+limit = 100
 
 
 def get_category_id(class_name):
