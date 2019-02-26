@@ -13,6 +13,22 @@ import re
 
 trainData = pd.read_csv("../data/train.csv")
 dictData = pd.read_csv("../data/kata_dasar_kbbi.csv")
+categories_file = open("../data/categories.json", "r")
+categories = json.load(categories_file)
+inverted_categories_mobile = {v: k.lower() for k, v in categories['Mobile'].items()}
+inverted_categories_fashion = {v: k.lower() for k, v in categories['Fashion'].items()}
+inverted_categories_beauty = {v: k.lower() for k, v in categories['Beauty'].items()}
+
+category_mapping = {
+    'fashion_image': 'Fashion',
+    'beauty_image': 'Beauty',
+    'mobile_image': 'Mobile',
+}
+directory_mapping = {
+    'Fashion': 'fashion_image',
+    'Beauty': 'beauty_image',
+    'Mobile': 'mobile_image',
+}
 
 dic = {}
 dicAll = {}
@@ -47,20 +63,40 @@ testData = pd.read_csv("../data/test.csv")
 idx = []
 res = []
 
+
+it = 0
 for index, row in testData.iterrows():
     maxi = 0.0
     imax = 0
-    for i in range(58):
+    s = row["title"]
+    img_path = row["image_path"]
+    cat = category_mapping[img_path.split('/')[0]]
+    arr = re.split('\W+', s)
+    if cat == 'Fashion':
+        sub_cats = inverted_categories_fashion
+    elif cat == 'Mobile':
+        sub_cats = inverted_categories_mobile
+    elif cat == 'Beauty':
+        sub_cats = inverted_categories_beauty
+    for sub_cat_id, sub_cat_name in sub_cats.items():
         tot = 0.0
-        arr = re.split('\W+', row["title"])
+
+        # Subcat add score function
+        if sub_cat_name.lower() in s.lower():
+            tot += 1
+        # Add score based on each substring in category
         for sz in arr:
-            if (sz, i) in dic:
-                tot += dic[(sz, i)]/dicAll[sz]
+            if (sz, sub_cat_id) in dic:
+                tot += dic[(sz, sub_cat_id)] / dicAll[sz]
         if tot > maxi:
             maxi = tot
-            imax = i
+            imax = sub_cat_id
     idx.append(row["itemid"])
     res.append(imax)
+    it += 1
+    if it > 10:
+        break
+
 df = pd.DataFrame({'itemid': idx, 'Category':res})
-df.to_csv(path_or_buf  = 'res.csv', index=False)
+df.to_csv(path_or_buf='res.csv', index=False)
 
