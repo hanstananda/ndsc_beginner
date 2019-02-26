@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pylab as plt
 import numpy as np
 import PIL.Image as Image
@@ -7,10 +9,10 @@ import tensorflow.keras.backend as K
 
 from tensorflow.keras import layers
 
-data_root = "../../fashion_image/"
+data_root = "../../beauty_image/"
 
 image_generator = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1/255)
-image_data = image_generator.flow_from_directory(str(data_root))
+valid_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 
 feature_extractor_url = "https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/2"
 
@@ -21,7 +23,17 @@ def feature_extractor(x):
 
 
 IMAGE_SIZE = hub.get_expected_image_size(hub.Module(feature_extractor_url))
-image_data = image_generator.flow_from_directory(str(data_root), target_size=IMAGE_SIZE)
+image_data = image_generator.flow_from_directory(os.path.join(data_root, "Train"), target_size=IMAGE_SIZE)
+
+valid_generator = valid_datagen.flow_from_directory(
+    directory=os.path.join(data_root, "Valid"),
+    target_size=(224, 224),
+    color_mode="rgb",
+    class_mode="categorical",
+    shuffle=True,
+    seed=42
+)
+
 for image_batch, label_batch in image_data:
     print("Image batch shape: ", image_batch.shape)
     print("Label batch shape: ", label_batch.shape)
@@ -57,9 +69,12 @@ class CollectBatchStats(tf.keras.callbacks.Callback):
 
 steps_per_epoch = image_data.samples//image_data.batch_size
 batch_stats = CollectBatchStats()
-model.fit((item for item in image_data), epochs=1,
+model.fit((item for item in image_data), epochs=50,
           steps_per_epoch=steps_per_epoch,
-          callbacks = [batch_stats])
+          callbacks=[batch_stats],
+          validation_data=valid_generator,
+          validation_steps=800,
+          )
 
 plt.figure()
 plt.ylabel("Loss")
