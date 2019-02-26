@@ -6,3 +6,5 @@ https://towardsdatascience.com/basics-of-image-classification-with-keras-43779a2
 Directory classification:
 https://medium.com/@vijayabhaskar96/tutorial-image-classification-with-keras-flow-from-directory-and-generators-95f75ebe5720
 
+Text classification:
+https://cloud.google.com/blog/products/gcp/intro-to-text-classification-with-keras-automatically-tagging-stack-overflow-posts
