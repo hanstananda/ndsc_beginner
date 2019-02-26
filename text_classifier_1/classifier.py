@@ -94,8 +94,8 @@ for index, row in testData.iterrows():
     idx.append(row["itemid"])
     res.append(imax)
     it += 1
-    if it > 10:
-        break
+    # if it > 10:
+    #     break
 
 df = pd.DataFrame({'itemid': idx, 'Category':res})
 df.to_csv(path_or_buf='res.csv', index=False)
