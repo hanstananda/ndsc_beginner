@@ -27,7 +27,7 @@ all_subcategories = {k.lower(): v for k, v in categories['Mobile'].items()}
 all_subcategories.update({k.lower(): v for k, v in categories['Fashion'].items()})
 all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()})
 
-gen_test = False
+gen_test = True
 
 print(all_subcategories)
 print("no of categories: "+str(len(all_subcategories)))
@@ -69,8 +69,6 @@ except:
 
 
 max_data_size = int(len(trainData) * 1)
-train_size = int(max_data_size * .9)
-print(train_size)
 print(max_data_size)
 
 train_texts = trainData['title']
@@ -113,8 +111,8 @@ print('y_validate shape:', y_validate.shape)
 # This model trains very quickly and 2 epochs are already more than enough
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
-batch_size = 128
-epochs = 25
+batch_size = 256
+epochs = 50
 
 # Build the model
 model = Sequential()
@@ -144,7 +142,7 @@ score = model.evaluate(x_validate, y_validate,
                        batch_size=batch_size, verbose=1)
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
-print(score)
+# print(score)
 
 # Here's how to generate a prediction on individual examples
 text_labels = encoder.classes_
@@ -155,6 +153,9 @@ text_labels = encoder.classes_
 #     print(validate_texts.iloc[i][:50], "...")
 #     print('Actual label:' + validate_tags.iloc[i])
 #     print("Predicted label: " + predicted_label + "\n")
+
+# save model
+model.save('model_epoch_50.h5')  # creates a HDF5 file 'my_model.h5'
 
 def perform_test():
     indexes = []
@@ -168,9 +169,12 @@ def perform_test():
         results.append(label_id)
 
     df = pd.DataFrame({'itemid': indexes, 'Category': results})
-    df.to_csv(path_or_buf='res6.csv', index=False)
+    df.to_csv(path_or_buf='res7.csv', index=False)
+
+
 if gen_test:
     perform_test()
+
 
 
 # This utility function is from the sklearn docs: http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
