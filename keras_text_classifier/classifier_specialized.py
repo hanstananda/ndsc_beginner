@@ -17,295 +17,287 @@ from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
 
-testData = pd.read_csv("../data/test.csv")
-dictData = pd.read_csv("../data/kata_dasar_kbbi.csv")
-categories_file = open("../data/categories.json", "r")
-categories = json.load(categories_file)
-inverted_categories_mobile = {v: k.lower() for k, v in categories['Mobile'].items()}
-num_classes_mobile = len(inverted_categories_mobile)
-inverted_categories_fashion = {v: k.lower() for k, v in categories['Fashion'].items()}
-num_classes_fashion = len(inverted_categories_fashion)
-inverted_categories_beauty = {v: k.lower() for k, v in categories['Beauty'].items()}
-num_classes_beauty = len(inverted_categories_beauty)
 
-all_subcategories = {k.lower(): v for k, v in categories['Mobile'].items()}
-all_subcategories.update({k.lower(): v for k, v in categories['Fashion'].items()})
-all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()})
-
-# Main settings
-
-max_words = 2500
-plot_history_check = True
-gen_test = True
-
-# Training for more epochs will likely lead to overfitting on this dataset
-# You can try tweaking these hyperparamaters when using this model with your own data
-batch_size = 256
-epochs = 30
-
-print(all_subcategories)
-print("no of categories: " + str(len(all_subcategories)))
-
-category_mapping = {
-    'fashion_image': 'Fashion',
-    'beauty_image': 'Beauty',
-    'mobile_image': 'Mobile',
-}
-directory_mapping = {
-    'Fashion': 'fashion_image',
-    'Beauty': 'beauty_image',
-    'Mobile': 'mobile_image',
-}
-
-try:
-    trainData = pd.read_csv("../data/train_with_cname.csv")
-    print("custom train data used")
-except:
-    print("cannot find custom data, generating...")
-    trainData = pd.read_csv("../data/train.csv")
-    trainData['item_category'] = 'None'
-    for index, row in trainData.iterrows():
-        s = row["title"]
-        img_path = row["image_path"]
-        cat = category_mapping[img_path.split('/')[0]]
-        if cat == 'Fashion':
-            sub_cats = inverted_categories_fashion
-        elif cat == 'Mobile':
-            sub_cats = inverted_categories_mobile
-        elif cat == 'Beauty':
-            sub_cats = inverted_categories_beauty
-        # trainData.set_value(index, 'item_category', sub_cats[row['Category']])
-        trainData.at[index, 'item_category'] = sub_cats[row['Category']]
-    try:
-        trainData.to_csv(path_or_buf='../data/train_with_cname.csv', index=False)
-    except:
-        trainData.to_csv(path_or_buf='train_with_cname.csv', index=False)
-
-
-train_data_fashion = trainData[trainData['image_path'].str.contains("fashion")]
-train_data_beauty = trainData[trainData['image_path'].str.contains("beauty")]
-train_data_mobile = trainData[trainData['image_path'].str.contains("mobile")]
-test_data_fashion = testData[testData['image_path'].str.contains("fashion")]
-test_data_beauty = testData[testData['image_path'].str.contains("beauty")]
-test_data_mobile = testData[testData['image_path'].str.contains("mobile")]
-
-# Shuffle train data
-train_data_fashion = shuffle(train_data_fashion)
-train_data_beauty = shuffle(train_data_beauty)
-train_data_mobile = shuffle(train_data_mobile)
-
-train_texts_fashion = train_data_fashion['title']
-train_texts_beauty = train_data_beauty['title']
-train_texts_mobile = train_data_mobile['title']
-test_texts_fashion = test_data_fashion['title']
-test_texts_beauty = test_data_beauty['title']
-test_texts_mobile = test_data_mobile['title']
-
-
-train_tags_fashion = train_data_fashion['item_category']
-train_tags_beauty = train_data_beauty['item_category']
-train_tags_mobile = train_data_mobile['item_category']
-
-
-tokenize_fashion = text.Tokenizer(num_words=max_words, char_level=False)
-tokenize_fashion.fit_on_texts(train_texts_fashion)
-tokenize_beauty = text.Tokenizer(num_words=max_words, char_level=False)
-tokenize_beauty.fit_on_texts(train_texts_beauty)
-tokenize_mobile = text.Tokenizer(num_words=max_words, char_level=False)
-tokenize_mobile.fit_on_texts(train_texts_mobile)
-
-x_train_fashion = tokenize_fashion.texts_to_matrix(train_texts_fashion)
-x_train_beauty = tokenize_beauty.texts_to_matrix(train_texts_beauty)
-x_train_mobile = tokenize_mobile.texts_to_matrix(train_texts_mobile)
-x_test_fashion = tokenize_fashion.texts_to_matrix(test_texts_fashion)
-x_test_beauty = tokenize_beauty.texts_to_matrix(test_texts_beauty)
-x_test_mobile = tokenize_mobile.texts_to_matrix(test_texts_mobile)
-
-
-encoder_fashion = LabelEncoder()
-encoder_fashion.fit(train_tags_fashion)
-encoder_beauty = LabelEncoder()
-encoder_beauty.fit(train_tags_beauty)
-encoder_mobile = LabelEncoder()
-encoder_mobile.fit(train_tags_mobile)
-
-y_train_fashion = encoder_fashion.transform(train_tags_fashion)
-y_train_beauty = encoder_beauty.transform(train_tags_beauty)
-y_train_mobile = encoder_mobile.transform(train_tags_mobile)
-
-# Converts the labels to a one-hot representation
-
-y_train_fashion = utils.to_categorical(y_train_fashion, num_classes_fashion)
-y_train_beauty = utils.to_categorical(y_train_beauty, num_classes_beauty)
-y_train_mobile = utils.to_categorical(y_train_mobile, num_classes_mobile)
-
-
-# Build the model
-def model_gen(num_classes):
-    model = Sequential()
-    model.add(Dense(512, input_shape=(max_words,)))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(num_classes))
-    model.add(Activation('softmax'))
-
-    model.compile(loss='categorical_crossentropy',
-                  optimizer='adam',
-                  metrics=['accuracy'])
-    return model
-
-
-model_fashion = model_gen(num_classes_fashion)
-model_beauty = model_gen(num_classes_beauty)
-model_mobile = model_gen(num_classes_mobile)
-
-# model.fit trains the model
-# The validation_split param tells Keras what % of our training data should be used in the validation set
-# You can see the validation loss decreasing slowly when you run this
-# Because val_loss is no longer decreasing we stop training to prevent overfitting
-
-history_fashion = model_fashion.fit(x_train_fashion, y_train_fashion,
-                                    batch_size=batch_size,
-                                    epochs=epochs,
-                                    verbose=1,
-                                    validation_split=0.1)
-
-history_beauty = model_beauty.fit(x_train_beauty, y_train_beauty,
-                                   batch_size=batch_size,
-                                   epochs=epochs,
-                                   verbose=1,
-                                   validation_split=0.1)
-
-history_mobile = model_mobile.fit(x_train_mobile, y_train_mobile,
-                                   batch_size=batch_size,
-                                   epochs=epochs,
-                                   verbose=1,
-                                   validation_split=0.1)
-
-
-def gen_filename_h5(history):
-    return 'epoch_'+str(epochs) + '_' + str(max_words) + '_' + \
-           str(history.history['val_acc'][-1]).replace('.', ',')[:5]
-
-
-def gen_filename_csv():
-    return 'epoch_'+str(epochs) + '_' + str(max_words) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
-
-
-def plot_history(history):
-    plt.style.use('ggplot')
-    acc = history.history['acc']
-    val_acc = history.history['val_acc']
-    loss = history.history['loss']
-    val_loss = history.history['val_loss']
-    x = range(1, len(acc) + 1)
-
-    plt.figure(figsize=(12, 5))
-    plt.subplot(1, 2, 1)
-    plt.plot(x, acc, 'b', label='Training acc')
-    plt.plot(x, val_acc, 'r', label='Validation acc')
-    plt.title('Training and validation accuracy')
-    plt.legend()
-    plt.subplot(1, 2, 2)
-    plt.plot(x, loss, 'b', label='Training loss')
-    plt.plot(x, val_loss, 'r', label='Validation loss')
-    plt.title('Training and validation loss')
-    plt.legend()
-    plt.show()
-
-
-if plot_history_check:
-    plot_history(history_fashion)
-    plot_history(history_beauty)
-    plot_history(history_mobile)
-
-# save model
-model_fashion.save('model_fashion_' + gen_filename_h5(history_fashion) + '.h5')
-model_beauty.save('model_beauty_' + gen_filename_h5(history_beauty) + '.h5')
-model_mobile.save('model_mobile_' + gen_filename_h5(history_mobile) + '.h5')
-
-
-def perform_test():
-    prediction_fashion = model_fashion.predict(x_test_fashion, batch_size=batch_size, verbose=1)
-    prediction_beauty = model_beauty.predict(x_test_beauty, batch_size=batch_size, verbose=1)
-    prediction_mobile = model_mobile.predict(x_test_mobile, batch_size=batch_size, verbose=1)
-    predicted_label_fashion = [all_subcategories[encoder_fashion.classes_[np.argmax(prediction_fashion[i])]]
-                               for i in range(len(x_test_fashion))]
-    predicted_label_beauty = [all_subcategories[encoder_beauty.classes_[np.argmax(prediction_beauty[i])]]
-                              for i in range(len(x_test_beauty))]
-    predicted_label_mobile = [all_subcategories[encoder_mobile.classes_[np.argmax(prediction_mobile[i])]]
-                              for i in range(len(x_test_mobile))]
-
-    df = pd.DataFrame({'itemid': test_data_fashion['itemid'].astype(int), 'Category': predicted_label_fashion})
-    df = df.append(pd.DataFrame({'itemid': test_data_beauty['itemid'].astype(int), 'Category': predicted_label_beauty}))
-    df = df.append(pd.DataFrame({'itemid': test_data_mobile['itemid'].astype(int), 'Category': predicted_label_mobile}))
-    # print(predicted_label_fashion)
-    # print(prediction_beauty)
-    # print(prediction_mobile)
-
-    # for i, row in testData.iterrows():
-    #     prediction = model.predict(np.array([x_test[i]]))
-    #     predicted_label = text_labels[np.argmax(prediction)]
-    #     label_id = all_subcategories[predicted_label]
-    #     indexes.append(row["itemid"])
-    #     results.append(label_id)
-    #
-    # df = pd.DataFrame({'itemid': indexes, 'Category': results})
-    df.to_csv(path_or_buf='res' + gen_filename_csv() + '.csv', index=False)
-
-
-if gen_test:
-    perform_test()
-
-
-# This utility function is from the sklearn docs:
-# http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
-def plot_confusion_matrix(cm, classes,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
+class Classifier:
     """
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
+    Classifier class
     """
+    test_data_path = '../data/test.csv'
 
-    cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+    dict_data_path = '../data/kata_dasar_kbbi.csv'
 
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title, fontsize=30)
-    plt.colorbar()
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45, fontsize=22)
-    plt.yticks(tick_marks, classes, fontsize=22)
+    categories_path = '../data/categories.json'
 
-    fmt = '.2f'
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
+    train_data_path_with_cname = '../data/train_with_cname.csv'
 
-    plt.ylabel('True label', fontsize=25)
-    plt.xlabel('Predicted label', fontsize=25)
+    train_data_path = '../data/train.csv'
+
+    categories = ['Fashion', 'Beauty', 'Mobile']
+
+    category_mapping = {
+        'fashion_image': 'Fashion',
+        'beauty_image': 'Beauty',
+        'mobile_image': 'Mobile',
+    }
+    directory_mapping = {
+        'Fashion': 'fashion_image',
+        'Beauty': 'beauty_image',
+        'Mobile': 'mobile_image',
+    }
+
+    def __init__(self, max_words=2500, plot_history_check=True, gen_test=256, batch_size=256, epoch=30):
+
+        self.max_words = max_words
+
+        self.plot_history_check = plot_history_check
+
+        self.gen_test = gen_test
+
+        self.batch_size = batch_size
+
+        self.epoch = epoch
+
+        self.test_data = None
+
+        self.dict_data = None
+
+        self.train_data = None
+
+        self.categories = None
+
+        self.train_data = None
+
+        self.tokenizer = None
+
+        self.encoder = LabelEncoder()
+
+    def load_test_data(self):
+        self.test_data = pd.read_csv(self.test_data_path)
+
+    def load_dic_data(self):
+        self.dict_data = pd.read_csv(self.dict_data_path)
+
+    def load_categories(self):
+        self.categories = json.load(self.categories_path)
+
+    def load_train_data(self):
+        try:
+            self.train_data = pd.read_csv(self.train_data_path_with_cname)
+            print("custom train data used")
+        except:
+            print("cannot find custom data, generating...")
+            self.train_data = pd.read_csv(self.train_data_path)
+            self.train_data['item_category'] = 'None'
+            for index, row in trainData.iterrows():
+                s = row["title"]
+                img_path = row["image_path"]
+                cat = category_mapping[img_path.split('/')[0]]
+                if cat == 'Fashion':
+                    sub_cats = self.get_inverted_subcategory('Fashion')
+                elif cat == 'Mobile':
+                    sub_cats = self.get_inverted_subcategory('Mobile')
+                elif cat == 'Beauty':
+                    sub_cats = self.get_inverted_subcategory('Beauty')
+                # trainData.set_value(index, 'item_category', sub_cats[row['Category']])
+                self.train_data.at[index, 'item_category'] = sub_cats[row['Category']]
+            try:
+                self.train_data.to_csv(path_or_buf=self.train_data_path_with_cname, index=False)
+            except:
+                self.train_data.to_csv(path_or_buf='train_with_cname.csv', index=False)
+
+    def get_all_subcategories(self):
+        all_subcategories = {}
+        for category in self.categories:
+            subcategory = self.get_subcategory(category)
+            all_subcategories.update(subcategory)
+        return all_subcategories
+
+    def get_inverted_subcategory(self, category):
+        return {v: k.lower() for k, v in self.categories[category].items()}
+
+    def get_subcategory(self, category):
+        return {k.lower(): v for k, v in self.categories[category].items()}
+
+    def get_train_data(self, category, test=False):
+        if test:
+            self.load_test_data()
+            return self.test_data[self.test_data['imagepath'].str.contains(category)]
+        else:
+            self.load_train_data()
+            return self.train_data[self.train_data['imagepath'].str.contains(category)]
+
+    def shuffle_train_data(self, category, test=False):
+        return shuffle(self.get_train_data(category, test))
+
+    def get_train_text(self, category, test=False):
+        return self.shuffle_train_data(category, test)['title']
+
+    def get_train_tag(self, category, test=False):
+        return self.shuffle_train_data(category, test)['item_category']
+
+    def tokenize(self, category, test=False):
+        self.tokenizer = text.Tokenizer(num_words=self.max_words, char_level=False)
+        self.tokenizer.fit_on_texts(self.get_train_text(category, test))
+
+    def text_to_matrix(self, category, test=False):
+        return self.tokenizer.texts_to_matrix(self.get_train_text(category, test))
+
+    def fit_encoder(self, category, test=False):
+        return self.encoder.fit(self.get_train_tag(category, test))
+
+    def transform_encoder(self, category, test=False):
+        return self.encoder.transform(self.get_train_tag(category, test))
+
+    def one_hot_repr(self, category, test=False):
+        return utils.to_categorical(self.transform_encoder(category, test), len(self.get_inverted_subcategory(category)))
+
+    @classmethod
+    def generate_model(cls, category):
+        model = Sequential()
+        model.add(Dense(512, input_shape=(max_words,)))
+        model.add(Activation('relu'))
+        model.add(Dropout(0.5))
+        model.add(Dense(len(cls.get_inverted_subcategory(category))))
+        model.add(Activation('softmax'))
+
+        model.compile(loss='categorical_crossentropy',
+                      optimizer='adam',
+                      metrics=['accuracy'])
+        return model
+
+    @classmethod
+    def build_model(cls, category):
+        cls.generate_model(category)
+
+    def gen_filename_h5(self, history):
+        return 'epoch_' + str(self.epoch) + '_' + str(self.max_words) + '_' + \
+               str(history.history['val_acc'][-1]).replace('.', ',')[:5]
+
+    def gen_filename_csv(self):
+        return 'epoch_' + str(self.epoch) + '_' + str(self.max_words) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+
+    @staticmethod
+    def plot_history(history):
+        plt.style.use('ggplot')
+        acc = history.history['acc']
+        val_acc = history.history['val_acc']
+        loss = history.history['loss']
+        val_loss = history.history['val_loss']
+        x = range(1, len(acc) + 1)
+
+        plt.figure(figsize=(12, 5))
+        plt.subplot(1, 2, 1)
+        plt.plot(x, acc, 'b', label='Training acc')
+        plt.plot(x, val_acc, 'r', label='Validation acc')
+        plt.title('Training and validation accuracy')
+        plt.legend()
+        plt.subplot(1, 2, 2)
+        plt.plot(x, loss, 'b', label='Training loss')
+        plt.plot(x, val_loss, 'r', label='Validation loss')
+        plt.title('Training and validation loss')
+        plt.legend()
+        plt.show()
+
+    def train(self, category, test=False):
+        model = self.generate_model(category)
+        model.fit(
+            self.text_to_matrix(category, test),
+            self.one_hot_repr(category, test),
+            batch_size=self.batch_size,
+            epochs=self.epoch,
+            verbose=1,
+            validation_split=0.1
+        )
+        # if self.plot_history_check:
+        #     self.plot_history(model)
+
+        return model
+
+    def save(self, category, test=False):
+        name = 'model_' + str(category) + '_' + self.gen_filename_h5(self.train(category, test)) + '.h5'
+        self.generate_model(category).save(name)
+
+    def perform_test(self, category):
+        prediction = self.generate_model(category)
+        prediction.predict(self.text_to_matrix(category, test=True), self.batch_size, verbose=1)
+        all_subcategories = self.get_all_subcategories()
+        predicted_label = [all_subcategories[self.fit_encoder(category, True).classes_[np.argmax(prediction[i])]]
+                           for i in range(len(self.text_to_matrix(category, test=True)))
+                           ]
+        return predicted_label
+
+    @classmethod
+    def data_frame(cls, category):
+        return pd.DataFrame({'itemid': cls.get_train_data(category)['itemid'].astype(int), 'Category': cls.perform_test(category)})
+        # print(predicted_label_fashion)
+        # print(prediction_beauty)
+        # print(prediction_mobile)
 
 
-# For plotting
-def plotting(model, text_labels, x_validate, y_validate):
-    y_softmax = model.predict(x_validate)
+    @classmethod
+    def plot_confusion_matrix(cls, cm, classes,
+                              title='Confusion matrix',
+                              cmap=plt.cm.Blues):
+        """
+        This function prints and plots the confusion matrix.
+        Normalization can be applied by setting `normalize=True`.
+        """
 
-    y_test_1d = []
-    y_pred_1d = []
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
 
-    for i in range(len(y_validate)):
-        probs = y_validate[i]
-        index_arr = np.nonzero(probs)
-        one_hot_index = index_arr[0].item(0)
-        y_test_1d.append(one_hot_index)
+        plt.imshow(cm, interpolation='nearest', cmap=cmap)
+        plt.title(title, fontsize=30)
+        plt.colorbar()
+        tick_marks = np.arange(len(classes))
+        plt.xticks(tick_marks, classes, rotation=45, fontsize=22)
+        plt.yticks(tick_marks, classes, fontsize=22)
 
-    for i in range(0, len(y_softmax)):
-        probs = y_softmax[i]
-        predicted_index = np.argmax(probs)
-        y_pred_1d.append(predicted_index)
-    cnf_matrix = confusion_matrix(y_test_1d, y_pred_1d)
-    plt.figure(figsize=(24, 20))
-    plot_confusion_matrix(cnf_matrix, classes=text_labels, title="Confusion matrix")
-    plt.show()
+        fmt = '.2f'
+        thresh = cm.max() / 2.
+        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+            plt.text(j, i, format(cm[i, j], fmt),
+                     horizontalalignment="center",
+                     color="white" if cm[i, j] > thresh else "black")
+
+        plt.ylabel('True label', fontsize=25)
+        plt.xlabel('Predicted label', fontsize=25)
+
+    # For plotting
+    @classmethod
+    def plotting(cls, model, text_labels, x_validate, y_validate):
+        y_softmax = model.predict(x_validate)
+
+        y_test_1d = []
+        y_pred_1d = []
+
+        for i in range(len(y_validate)):
+            probs = y_validate[i]
+            index_arr = np.nonzero(probs)
+            one_hot_index = index_arr[0].item(0)
+            y_test_1d.append(one_hot_index)
+
+        for i in range(0, len(y_softmax)):
+            probs = y_softmax[i]
+            predicted_index = np.argmax(probs)
+            y_pred_1d.append(predicted_index)
+        cnf_matrix = confusion_matrix(y_test_1d, y_pred_1d)
+        plt.figure(figsize=(24, 20))
+        cls.plot_confusion_matrix(cnf_matrix, classes=text_labels, title="Confusion matrix")
+        plt.show()
+
+
+
+
+# df = pd.DataFrame({'itemid': test_data_fashion['itemid'].astype(int), 'Category': predicted_label_fashion})
+# df = df.append(pd.DataFrame({'itemid': test_data_beauty['itemid'].astype(int), 'Category': predicted_label_beauty}))
+# df = df.append(pd.DataFrame({'itemid': test_data_mobile['itemid'].astype(int), 'Category': predicted_label_mobile}))
+
+df = Classifier.perform_test('Fashion')
+
+# df.to_csv(path_or_buf='res' + gen_filename_csv() + '.csv', index=False)
+
+
+# if gen_test:
+#     perform_test()
+#
+
