@@ -34,14 +34,14 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 
 # Main settings
 
-max_words = 2000
+max_words = 2500
 plot_history_check = True
 gen_test = True
 
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 3
+epochs = 30
 
 print(all_subcategories)
 print("no of categories: " + str(len(all_subcategories)))
@@ -89,6 +89,11 @@ test_data_fashion = testData[testData['image_path'].str.contains("fashion")]
 test_data_beauty = testData[testData['image_path'].str.contains("beauty")]
 test_data_mobile = testData[testData['image_path'].str.contains("mobile")]
 
+# Shuffle train data
+train_data_fashion = shuffle(train_data_fashion)
+train_data_beauty = shuffle(train_data_beauty)
+train_data_mobile = shuffle(train_data_mobile)
+
 train_texts_fashion = train_data_fashion['title']
 train_texts_beauty = train_data_beauty['title']
 train_texts_mobile = train_data_mobile['title']
@@ -115,6 +120,7 @@ x_train_mobile = tokenize_mobile.texts_to_matrix(train_texts_mobile)
 x_test_fashion = tokenize_fashion.texts_to_matrix(test_texts_fashion)
 x_test_beauty = tokenize_beauty.texts_to_matrix(test_texts_beauty)
 x_test_mobile = tokenize_mobile.texts_to_matrix(test_texts_mobile)
+
 
 encoder_fashion = LabelEncoder()
 encoder_fashion.fit(train_tags_fashion)
