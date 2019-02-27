@@ -34,14 +34,14 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 
 # Main settings
 
-max_words = 1000
+max_words = 2000
 plot_history_check = True
 gen_test = True
 
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 1
+epochs = 3
 
 print(all_subcategories)
 print("no of categories: " + str(len(all_subcategories)))
@@ -101,12 +101,13 @@ train_tags_fashion = train_data_fashion['item_category']
 train_tags_beauty = train_data_beauty['item_category']
 train_tags_mobile = train_data_mobile['item_category']
 
+
 tokenize_fashion = text.Tokenizer(num_words=max_words, char_level=False)
 tokenize_fashion.fit_on_texts(train_texts_fashion)
 tokenize_beauty = text.Tokenizer(num_words=max_words, char_level=False)
-tokenize_beauty.fit_on_texts(train_data_beauty)
+tokenize_beauty.fit_on_texts(train_texts_beauty)
 tokenize_mobile = text.Tokenizer(num_words=max_words, char_level=False)
-tokenize_mobile.fit_on_texts(train_data_mobile)
+tokenize_mobile.fit_on_texts(train_texts_mobile)
 
 x_train_fashion = tokenize_fashion.texts_to_matrix(train_texts_fashion)
 x_train_beauty = tokenize_beauty.texts_to_matrix(train_texts_beauty)
@@ -176,9 +177,13 @@ history_mobile = model_mobile.fit(x_train_mobile, y_train_mobile,
                                    validation_split=0.1)
 
 
-def gen_filename(history):
-    return str(epochs) + '_' + str(max_words) + '_' + \
+def gen_filename_h5(history):
+    return 'epoch_'+str(epochs) + '_' + str(max_words) + '_' + \
            str(history.history['val_acc'][-1]).replace('.', ',')[:5]
+
+
+def gen_filename_csv():
+    return 'epoch_'+str(epochs) + '_' + str(max_words) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
 
 def plot_history(history):
@@ -209,27 +214,25 @@ if plot_history_check:
     plot_history(history_mobile)
 
 # save model
-model_fashion.save('model_fashion_' + gen_filename(history_fashion) + '.h5')
-model_beauty.save('model_beauty_' + gen_filename(history_beauty) + '.h5')
-model_mobile.save('model_mobile_'+ gen_filename(history_mobile) +'.h5')
+model_fashion.save('model_fashion_' + gen_filename_h5(history_fashion) + '.h5')
+model_beauty.save('model_beauty_' + gen_filename_h5(history_beauty) + '.h5')
+model_mobile.save('model_mobile_' + gen_filename_h5(history_mobile) + '.h5')
 
 
 def perform_test():
-    df = pd.DataFrame({'itemid': [], 'Category': []})
-    prediction_fashion = model_fashion.predict(x_test_fashion, batch_size=batch_size)
-    prediction_beauty = model_beauty.predict(x_test_beauty, batch_size=batch_size)
-    prediction_mobile = model_mobile.predict(x_test_mobile, batch_size=batch_size)
-    predicted_label_fashion = [encoder_beauty.classes_[np.argmax(prediction_fashion[i])] for i in
-                               range(len(x_test_fashion))]
-    predicted_label_beauty = [encoder_beauty.classes_[np.argmax(prediction_beauty[i])] for i in
-                               range(len(x_test_beauty))]
-    predicted_label_mobile = [encoder_beauty.classes_[np.argmax(prediction_mobile[i])] for i in
-                               range(len(x_test_mobile))]
+    prediction_fashion = model_fashion.predict(x_test_fashion, batch_size=batch_size, verbose=1)
+    prediction_beauty = model_beauty.predict(x_test_beauty, batch_size=batch_size, verbose=1)
+    prediction_mobile = model_mobile.predict(x_test_mobile, batch_size=batch_size, verbose=1)
+    predicted_label_fashion = [all_subcategories[encoder_fashion.classes_[np.argmax(prediction_fashion[i])]]
+                               for i in range(len(x_test_fashion))]
+    predicted_label_beauty = [all_subcategories[encoder_beauty.classes_[np.argmax(prediction_beauty[i])]]
+                              for i in range(len(x_test_beauty))]
+    predicted_label_mobile = [all_subcategories[encoder_mobile.classes_[np.argmax(prediction_mobile[i])]]
+                              for i in range(len(x_test_mobile))]
 
-    df.append(pd.DataFrame({'itemid': test_data_fashion['itemid'], 'Category': predicted_label_fashion}))
-    df.append(pd.DataFrame({'itemid': test_texts_beauty['itemid'], 'Category': predicted_label_beauty}))
-    df.append(pd.DataFrame({'itemid': test_data_mobile['itemid'], 'Category': predicted_label_mobile}))
-
+    df = pd.DataFrame({'itemid': test_data_fashion['itemid'].astype(int), 'Category': predicted_label_fashion})
+    df = df.append(pd.DataFrame({'itemid': test_data_beauty['itemid'].astype(int), 'Category': predicted_label_beauty}))
+    df = df.append(pd.DataFrame({'itemid': test_data_mobile['itemid'].astype(int), 'Category': predicted_label_mobile}))
     # print(predicted_label_fashion)
     # print(prediction_beauty)
     # print(prediction_mobile)
@@ -242,7 +245,7 @@ def perform_test():
     #     results.append(label_id)
     #
     # df = pd.DataFrame({'itemid': indexes, 'Category': results})
-    df.to_csv(path_or_buf='res'+gen_filename()+'.csv', index=False)
+    df.to_csv(path_or_buf='res' + gen_filename_csv() + '.csv', index=False)
 
 
 if gen_test:
