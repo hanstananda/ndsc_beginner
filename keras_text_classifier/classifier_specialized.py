@@ -34,7 +34,7 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 
 # Main settings
 
-max_words = 2500
+max_words = 1000
 plot_history_check = True
 gen_test = True
 
@@ -81,7 +81,6 @@ except:
     except:
         trainData.to_csv(path_or_buf='train_with_cname.csv', index=False)
 
-max_words = 2500
 
 train_data_fashion = trainData[trainData['image_path'].str.contains("fashion")]
 train_data_beauty = trainData[trainData['image_path'].str.contains("beauty")]
@@ -114,8 +113,11 @@ x_train_beauty = tokenize_beauty.texts_to_matrix(train_texts_beauty)
 x_train_mobile = tokenize_mobile.texts_to_matrix(train_texts_mobile)
 
 encoder_fashion = LabelEncoder()
+encoder_fashion.fit(train_tags_fashion)
 encoder_beauty = LabelEncoder()
+encoder_beauty.fit(train_tags_beauty)
 encoder_mobile = LabelEncoder()
+encoder_mobile.fit(train_tags_mobile)
 
 y_train_fashion = encoder_fashion.transform(train_tags_fashion)
 y_train_beauty = encoder_beauty.transform(train_tags_beauty)
@@ -158,13 +160,13 @@ history_fashion = model_fashion.fit(x_train_fashion, y_train_fashion,
                                     verbose=1,
                                     validation_split=0.1)
 
-history_beauty = model_fashion.fit(x_train_beauty, y_train_beauty,
+history_beauty = model_beauty.fit(x_train_beauty, y_train_beauty,
                                    batch_size=batch_size,
                                    epochs=epochs,
                                    verbose=1,
                                    validation_split=0.1)
 
-history_mobile = model_fashion.fit(x_train_mobile, y_train_mobile,
+history_mobile = model_mobile.fit(x_train_mobile, y_train_mobile,
                                    batch_size=batch_size,
                                    epochs=epochs,
                                    verbose=1,
@@ -200,7 +202,7 @@ def plot_history(history):
 
 if plot_history_check:
     plot_history(history_fashion)
-    plot_history(history_mobile)
+    plot_history(history_beauty)
     plot_history(history_mobile)
 
 # save model
