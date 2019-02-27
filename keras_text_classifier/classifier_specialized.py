@@ -111,6 +111,9 @@ tokenize_mobile.fit_on_texts(train_data_mobile)
 x_train_fashion = tokenize_fashion.texts_to_matrix(train_texts_fashion)
 x_train_beauty = tokenize_beauty.texts_to_matrix(train_texts_beauty)
 x_train_mobile = tokenize_mobile.texts_to_matrix(train_texts_mobile)
+x_test_fashion = tokenize_fashion.texts_to_matrix(test_texts_fashion)
+x_test_beauty = tokenize_beauty.texts_to_matrix(test_texts_beauty)
+x_test_mobile = tokenize_mobile.texts_to_matrix(test_texts_mobile)
 
 encoder_fashion = LabelEncoder()
 encoder_fashion.fit(train_tags_fashion)
@@ -174,7 +177,7 @@ history_mobile = model_mobile.fit(x_train_mobile, y_train_mobile,
 
 
 def gen_filename(history):
-    return +str(epochs) + '_' + str(max_words) + '_' + \
+    return str(epochs) + '_' + str(max_words) + '_' + \
            str(history.history['val_acc'][-1]).replace('.', ',')[:5]
 
 
@@ -208,17 +211,28 @@ if plot_history_check:
 # save model
 model_fashion.save('model_fashion_' + gen_filename(history_fashion) + '.h5')
 model_beauty.save('model_beauty_' + gen_filename(history_beauty) + '.h5')
-model_mobile.save('model_mobile_'+gen_filename(history_mobile)+'.h5')
+model_mobile.save('model_mobile_'+ gen_filename(history_mobile) +'.h5')
 
 
 def perform_test():
-    prediction_fashion = model_fashion.predict_on_batch(test_texts_fashion)
-    prediction_beauty = model_beauty.predict_on_batch(test_texts_beauty)
-    prediction_mobile = model_mobile.predict_on_batch(test_data_mobile)
+    df = pd.DataFrame({'itemid': [], 'Category': []})
+    prediction_fashion = model_fashion.predict(x_test_fashion, batch_size=batch_size)
+    prediction_beauty = model_beauty.predict(x_test_beauty, batch_size=batch_size)
+    prediction_mobile = model_mobile.predict(x_test_mobile, batch_size=batch_size)
+    predicted_label_fashion = [encoder_beauty.classes_[np.argmax(prediction_fashion[i])] for i in
+                               range(len(x_test_fashion))]
+    predicted_label_beauty = [encoder_beauty.classes_[np.argmax(prediction_beauty[i])] for i in
+                               range(len(x_test_beauty))]
+    predicted_label_mobile = [encoder_beauty.classes_[np.argmax(prediction_mobile[i])] for i in
+                               range(len(x_test_mobile))]
 
-    print(prediction_fashion)
-    print(prediction_beauty)
-    print(prediction_mobile)
+    df.append(pd.DataFrame({'itemid': test_data_fashion['itemid'], 'Category': predicted_label_fashion}))
+    df.append(pd.DataFrame({'itemid': test_texts_beauty['itemid'], 'Category': predicted_label_beauty}))
+    df.append(pd.DataFrame({'itemid': test_data_mobile['itemid'], 'Category': predicted_label_mobile}))
+
+    # print(predicted_label_fashion)
+    # print(prediction_beauty)
+    # print(prediction_mobile)
 
     # for i, row in testData.iterrows():
     #     prediction = model.predict(np.array([x_test[i]]))
@@ -228,14 +242,15 @@ def perform_test():
     #     results.append(label_id)
     #
     # df = pd.DataFrame({'itemid': indexes, 'Category': results})
-    # df.to_csv(path_or_buf='res'+gen_filename()+'.csv', index=False)
+    df.to_csv(path_or_buf='res'+gen_filename()+'.csv', index=False)
 
 
 if gen_test:
     perform_test()
 
 
-# This utility function is from the sklearn docs: http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
+# This utility function is from the sklearn docs:
+# http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
 def plot_confusion_matrix(cm, classes,
                           title='Confusion matrix',
                           cmap=plt.cm.Blues):
