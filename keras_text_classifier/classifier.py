@@ -1,3 +1,4 @@
+from datetime import datetime
 import itertools
 import json
 import matplotlib.pyplot as plt
@@ -5,6 +6,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 
+from sklearn.utils import shuffle
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 from sklearn.metrics import confusion_matrix
 
@@ -28,7 +30,7 @@ all_subcategories.update({k.lower(): v for k, v in categories['Fashion'].items()
 all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()})
 
 plot_history_check = True
-gen_test = False
+gen_test = True
 
 print(all_subcategories)
 print("no of categories: "+str(len(all_subcategories)))
@@ -68,17 +70,22 @@ except:
     except:
         trainData.to_csv(path_or_buf='train_with_cname.csv', index=False)
 
+# Shuffle train data
+trainData = shuffle(trainData)
 
 max_data_size = int(len(trainData) * 1)
+train_data_step = 1
+validate_data_step = 250
 print(max_data_size)
 
-train_texts = trainData['title']
-train_tags = trainData['item_category']
-validate_texts = trainData['title'][::max_data_size//100]
-validate_tags = trainData['item_category'][::max_data_size//100]
+train_texts = trainData['title'][::train_data_step]
+train_tags = trainData['item_category'][::train_data_step]
+validate_texts = trainData['title'][1::validate_data_step]
+validate_tags = trainData['item_category'][1::validate_data_step]
 test_texts = testData['title']
 
-max_words = 1000
+
+max_words = 2500
 tokenize = text.Tokenizer(num_words=max_words, char_level=False)
 tokenize.fit_on_texts(train_texts)  # only fit on train
 x_train = tokenize.texts_to_matrix(train_texts)
@@ -109,11 +116,10 @@ print('x_validate shape:', x_validate.shape)
 print('y_train shape:', y_train.shape)
 print('y_validate shape:', y_validate.shape)
 
-# This model trains very quickly and 2 epochs are already more than enough
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 50
+epochs = 5
 
 # Build the model
 model = Sequential()
@@ -126,6 +132,7 @@ model.add(Activation('softmax'))
 model.compile(loss='categorical_crossentropy',
               optimizer='adam',
               metrics=['accuracy'])
+model.summary()
 
 # model.fit trains the model
 # The validation_split param tells Keras what % of our training data should be used in the validation set
@@ -155,27 +162,12 @@ text_labels = encoder.classes_
 #     print('Actual label:' + validate_tags.iloc[i])
 #     print("Predicted label: " + predicted_label + "\n")
 
+def gen_filename():
+    return str(epochs)+'_'+str(max_words)+'_'+str(history.history['val_acc'][-1]).replace('.', ',')
+
+
 # save model
-model.save('model_epoch_50.h5')  # creates a HDF5 file 'my_model.h5'
-
-def perform_test():
-    indexes = []
-    results = []
-
-    for i, row in testData.iterrows():
-        prediction = model.predict(np.array([x_test[i]]))
-        predicted_label = text_labels[np.argmax(prediction)]
-        label_id = all_subcategories[predicted_label]
-        indexes.append(row["itemid"])
-        results.append(label_id)
-
-    df = pd.DataFrame({'itemid': indexes, 'Category': results})
-    df.to_csv(path_or_buf='res7.csv', index=False)
-
-
-if gen_test:
-    perform_test()
-
+model.save('model_'+gen_filename()+'.h5')  # creates a HDF5 file 'my_model.h5'
 
 
 def plot_history(history):
@@ -197,9 +189,29 @@ def plot_history(history):
     plt.plot(x, val_loss, 'r', label='Validation loss')
     plt.title('Training and validation loss')
     plt.legend()
+    plt.show()
+
 
 if plot_history_check:
     plot_history(history)
+
+def perform_test():
+    indexes = []
+    results = []
+
+    for i, row in testData.iterrows():
+        prediction = model.predict(np.array([x_test[i]]))
+        predicted_label = text_labels[np.argmax(prediction)]
+        label_id = all_subcategories[predicted_label]
+        indexes.append(row["itemid"])
+        results.append(label_id)
+
+    df = pd.DataFrame({'itemid': indexes, 'Category': results})
+    df.to_csv(path_or_buf='res'+gen_filename()+'.csv', index=False)
+
+
+if gen_test:
+    perform_test()
 
 # This utility function is from the sklearn docs: http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
 def plot_confusion_matrix(cm, classes,
