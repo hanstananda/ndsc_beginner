@@ -12,7 +12,7 @@ from sklearn.metrics import confusion_matrix
 
 from tensorflow import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout
+from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -74,14 +74,15 @@ except:
 trainData = shuffle(trainData)
 
 max_data_size = int(len(trainData) * 1)
+train_data_size = int(max_data_size * .95)
 train_data_step = 1
-validate_data_step = 250
+validate_data_step = 1
 print(max_data_size)
 
-train_texts = trainData['title'][::train_data_step]
-train_tags = trainData['item_category'][::train_data_step]
-validate_texts = trainData['title'][1::validate_data_step]
-validate_tags = trainData['item_category'][1::validate_data_step]
+train_texts = trainData['title'][:train_data_size:train_data_step]
+train_tags = trainData['item_category'][:train_data_size:train_data_step]
+validate_texts = trainData['title'][train_data_size:max_data_size:validate_data_step]
+validate_tags = trainData['item_category'][train_data_size:max_data_size:validate_data_step]
 test_texts = testData['title']
 
 
@@ -119,19 +120,25 @@ print('y_validate shape:', y_validate.shape)
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 5
+epochs = 1
+model_no = 1
 
 # Build the model
-model = Sequential()
-model.add(Dense(512, input_shape=(max_words,)))
-model.add(Activation('relu'))
-model.add(Dropout(0.5))
-model.add(Dense(num_classes))
-model.add(Activation('softmax'))
+def model1():
+    model = Sequential()
+    model.add(Dense(512, input_shape=(max_words,)))
+    model.add(Activation('relu'))
+    model.add(Dropout(0.5))
+    model.add(Dense(num_classes))
+    model.add(Activation('softmax'))
 
-model.compile(loss='categorical_crossentropy',
-              optimizer='adam',
-              metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy',
+                  optimizer='adam',
+                  metrics=['accuracy'])
+    return model
+
+if model_no == 1:
+    model = model1()
 model.summary()
 
 # model.fit trains the model
@@ -162,8 +169,10 @@ text_labels = encoder.classes_
 #     print('Actual label:' + validate_tags.iloc[i])
 #     print("Predicted label: " + predicted_label + "\n")
 
+
 def gen_filename():
-    return str(epochs)+'_'+str(max_words)+'_'+str(history.history['val_acc'][-1]).replace('.', ',')
+    return str(model_no)+'_'+str(epochs)+'_'+str(max_words)+'_'+\
+           str(history.history['val_acc'][-1]).replace('.', ',')[:5]
 
 
 # save model
