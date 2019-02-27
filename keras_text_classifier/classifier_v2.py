@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from keras.callbacks import ModelCheckpoint
 from keras_preprocessing.sequence import pad_sequences
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.linear_model import LogisticRegression
@@ -15,7 +16,7 @@ from sklearn.metrics import confusion_matrix
 
 from tensorflow import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D
+from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -35,17 +36,15 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 # Main settings
 plot_history_check = True
 gen_test = True
-maxlen = 50 # 32 is max word in train
+max_length = 50  # 32 is max word in train
 num_classes = len(all_subcategories)
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 1
-embedding_dim = 100
-model_no = 2
+epochs = 50
 
 print(all_subcategories)
-print("no of categories: "+str(num_classes))
+print("no of categories: " + str(num_classes))
 
 category_mapping = {
     'fashion_image': 'Fashion',
@@ -58,131 +57,80 @@ directory_mapping = {
     'Mobile': 'mobile_image',
 }
 
-
 trainData = pd.read_csv("../data/train.csv")
 
 # Shuffle train data
 trainData = shuffle(trainData)
 
-max_data_size = int(len(trainData) * .1)
+max_data_size = int(len(trainData) * 1)
 train_data_size = int(max_data_size * .95)
 train_data_step = 1
 validate_data_step = 1
 print(train_data_size, max_data_size)
 
-train_texts = trainData['title'][:train_data_size:train_data_step]
-train_tags = trainData['Category'][:train_data_size:train_data_step]
-validate_texts = trainData['title'][train_data_size:max_data_size:validate_data_step]
-validate_tags = trainData['Category'][train_data_size:max_data_size:validate_data_step]
+train_texts = trainData['title'][::train_data_step]
+train_tags = trainData['Category'][::train_data_step]
 test_texts = testData['title']
 print(len(train_texts), len(train_tags))
-print(len(validate_texts), len(validate_tags))
 
+y = train_tags.values
 
-# Regression test
-def regression():
-    vectorizer = CountVectorizer()
-    vectorizer.fit(train_texts)
-    X_train = vectorizer.transform(train_texts)
-    X_validate  = vectorizer.transform(validate_texts)
-
-    classifier = LogisticRegression()
-    classifier.fit(X_train, y_train)
-    score = classifier.score(X_validate, y_validate)
-    print('Accuracy for {} data: {:.4f}'.format("data", score))
-# regression()
-
-
-max_words = 2500
-tokenize = text.Tokenizer(num_words=max_words, char_level=False)
+tokenize = text.Tokenizer(num_words=max_length, char_level=False)
 tokenize.fit_on_texts(train_texts)  # only fit on train
 x_train = tokenize.texts_to_sequences(train_texts)
-x_validate = tokenize.texts_to_sequences(validate_texts)
 x_test = tokenize.texts_to_sequences(test_texts)
 
 # Pad sequences with zeros
-x_train = pad_sequences(x_train, padding='post', maxlen=maxlen)
-x_validate = pad_sequences(x_validate, padding='post', maxlen=maxlen)
-x_test = pad_sequences(x_test, padding='post', maxlen=maxlen)
+x_train = pad_sequences(x_train, padding='post', maxlen=max_length)
+x_test = pad_sequences(x_test, padding='post', maxlen=max_length)
 
 y_train = train_tags.values
-y_validate = validate_tags.values
-
-print(len(y_train), len(y_validate))
-
+y_train = utils.to_categorical(y_train)
 vocab_size = len(tokenize.word_index) + 1
-# Build the model
 
-def model2():
-    model = Sequential()
-    model.add(Embedding(input_dim=vocab_size,
-                       output_dim=embedding_dim,
-                       input_length=maxlen,
-                        trainable=True))
-    model.add(GlobalMaxPooling1D())
-    model.add(Dense(10, activation='relu'))
-    model.add(Dense(1, activation='sigmoid'))
-    model.compile(optimizer='adam',
-                  loss='binary_crossentropy',
-                  metrics=['accuracy'])
-    return model
+# model 1
+# model = Sequential()
+# model.add(Embedding(vocab_size,
+#                     128,
+#                     input_length=max_length,
+#                     trainable=True))
+# model.add(Flatten())
+# model.add(Dense(64, activation='relu'))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
 
+# model 2
+model = Sequential()
+model.add(Embedding(vocab_size,
+                    128,
+                    input_length=max_length,
+                    trainable=True))
+model.add(LSTM(64))
+model.add(Dense(64, activation='relu'))
+model.add(Dense(num_classes, activation='softmax'))
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
 
-def model3():
-    model = Sequential()
-    model.add(Embedding(vocab_size, embedding_dim,
-                               input_length=maxlen,
-                               trainable=True))
-    model.add(Conv1D(128, 5, activation='relu'))
-    model.add(GlobalMaxPooling1D())
-    model.add(Dense(10, activation='relu'))
-    model.add(Dense(1, activation='sigmoid'))
-    model.compile(optimizer='adam',
-                  loss='binary_crossentropy',
-                  metrics=['accuracy'])
-    return model
-
-if model_no == 2:
-    model = model2()
-elif model_no == 3:
-    model = model3()
 model.summary()
 
-# model.fit trains the model
-# The validation_split param tells Keras what % of our training data should be used in the validation set
-# You can see the validation loss decreasing slowly when you run this
-# Because val_loss is no longer decreasing we stop training to prevent overfitting
-history = model.fit(x_train, y_train,
-                    batch_size=batch_size,
-                    epochs=epochs,
-                    verbose=1,
-                    validation_split=0.1)
+
+def gen_filename_h5():
+    return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
 
-# Evaluate the accuracy of our trained model
-score = model.evaluate(x_validate, y_validate,
-                       batch_size=batch_size, verbose=1)
-print('Test score:', score[0])
-print('Test accuracy:', score[1])
-# print(score)
-
-# Here's how to generate a prediction on individual examples
-
-# for i in range(10):
-#     prediction = model.predict(np.array([x_validate[i]]))
-#     predicted_label = text_labels[np.argmax(prediction)]
-#     print(validate_texts.iloc[i][:50], "...")
-#     print('Actual label:' + validate_tags.iloc[i])
-#     print("Predicted label: " + predicted_label + "\n")
+def gen_filename_csv():
+    return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
 
-def gen_filename():
-    return str(model_no)+'_'+str(epochs)+'_'+str(max_words)+'_'+\
-           str(history.history['val_acc'][-1]).replace('.', ',')[:5]
+# Checkpoint auto
+filepath = gen_filename_h5()+".hdf5"
+checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
-
-# save model
-model.save('model_'+gen_filename()+'.h5')  # creates a HDF5 file 'my_model.h5'
+history = model.fit([x_train], batch_size=batch_size, y=y_train, verbose=1, validation_split=0.1,
+                    shuffle=True, epochs=epochs, callbacks=[checkpointer])
 
 
 def plot_history(history):
@@ -210,25 +158,21 @@ def plot_history(history):
 if plot_history_check:
     plot_history(history)
 
+
 def perform_test():
-    indexes = []
-    results = []
-
-    for i, row in testData.iterrows():
-        prediction = model.predict(np.array([x_test[i]]))
-        print(prediction)
-        #label_id = all_subcategories[predicted_label]
-        #indexes.append(row["itemid"])
-        #results.append(label_id)
-
-    df = pd.DataFrame({'itemid': indexes, 'Category': results})
-    df.to_csv(path_or_buf='res'+gen_filename()+'.csv', index=False)
+    prediction = model.predict(x_test, batch_size=batch_size, verbose=1)
+    predicted_label = [np.argmax(prediction[i]) for i in range(len(x_test))]
+    # print(predicted_label)
+    df = pd.DataFrame({'itemid': testData['itemid'].astype(int), 'Category': predicted_label})
+    df.to_csv(path_or_buf='res_' + gen_filename_csv() + '.csv', index=False)
 
 
 if gen_test:
     perform_test()
 
-# This utility function is from the sklearn docs: http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
+
+# This utility function is from the sklearn docs:
+# http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
 def plot_confusion_matrix(cm, classes,
                           title='Confusion matrix',
                           cmap=plt.cm.Blues):
@@ -255,27 +199,4 @@ def plot_confusion_matrix(cm, classes,
 
     plt.ylabel('True label', fontsize=25)
     plt.xlabel('Predicted label', fontsize=25)
-
-
-# For plotting
-def plotting():
-    y_softmax = model.predict(x_validate)
-
-    y_test_1d = []
-    y_pred_1d = []
-
-    for i in range(len(y_validate)):
-        probs = y_validate[i]
-        index_arr = np.nonzero(probs)
-        one_hot_index = index_arr[0].item(0)
-        y_test_1d.append(one_hot_index)
-
-    for i in range(0, len(y_softmax)):
-        probs = y_softmax[i]
-        predicted_index = np.argmax(probs)
-        y_pred_1d.append(predicted_index)
-    cnf_matrix = confusion_matrix(y_test_1d, y_pred_1d)
-    plt.figure(figsize=(24,20))
-    plot_confusion_matrix(cnf_matrix, classes=text_labels, title="Confusion matrix")
     plt.show()
-
