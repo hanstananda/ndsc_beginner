@@ -3,6 +3,7 @@ import itertools
 import json
 import matplotlib.pyplot as plt
 import numpy as np
+from keras.callbacks import ModelCheckpoint
 from keras.wrappers.scikit_learn import KerasClassifier
 from keras_preprocessing.sequence import pad_sequences
 import joblib
@@ -101,27 +102,29 @@ def create_model(num_filters, kernel_size, vocab_size, embedding_dim, max_length
     return model
 
 
-param_grid = dict(num_filters=[32, 64, 128],
-                  kernel_size=[3, 5, 7],
-                  vocab_size=[vocab_size],
-                  embedding_dim=[64, 128],
-                  max_length=[max_length])
-
-model = KerasClassifier(build_fn=create_model,
-                        epochs=epochs, batch_size=batch_size,
-                        verbose=False)
-
-grid = RandomizedSearchCV(estimator=model, param_distributions=param_grid,
-                              cv=4, verbose=1, n_iter=10)
-grid_result = grid.fit(x_train, y_train)
-
-
 def gen_filename_h5():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
 
 def gen_filename_csv():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+
+
+param_grid = dict(num_filters=[32, 64, 128],
+                  kernel_size=[3, 5, 7],
+                  vocab_size=[vocab_size],
+                  embedding_dim=[64, 128],
+                  max_length=[max_length])
+
+filepath = "../checkpoints/"+gen_filename_h5()+"v2.hdf5"
+checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+model = KerasClassifier(build_fn=create_model,
+                        epochs=epochs, batch_size=batch_size,
+                        verbose=True, callbacks=[checkpointer])
+
+grid = RandomizedSearchCV(estimator=model, param_distributions=param_grid,
+                              cv=4, verbose=1, n_iter=10)
+grid_result = grid.fit(x_train, y_train)
 
 
 with open("../checkpoints/"+gen_filename_h5()+".pickle","w+") as f:
