@@ -154,7 +154,8 @@ history = model.fit(x_train, y_train,
                     verbose=1,
                     validation_split=0.1)
 
-
+# Val Accuracy after 10 epochs:  0.7210
+# Val Accuracy after 50 epoch: 0.7292
 # Evaluate the accuracy of our trained model
 score = model.evaluate(x_validate, y_validate,
                        batch_size=batch_size, verbose=1)

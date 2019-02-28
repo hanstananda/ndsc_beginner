@@ -88,10 +88,10 @@ class Classifier:
             print("cannot find custom data, generating...")
             self.train_data = pd.read_csv(self.train_data_path)
             self.train_data['item_category'] = 'None'
-            for index, row in trainData.iterrows():
+            for index, row in self.trainData.iterrows():
                 s = row["title"]
                 img_path = row["image_path"]
-                cat = category_mapping[img_path.split('/')[0]]
+                cat = self.category_mapping[img_path.split('/')[0]]
                 if cat == 'Fashion':
                     sub_cats = self.get_inverted_subcategory('Fashion')
                 elif cat == 'Mobile':
@@ -152,7 +152,7 @@ class Classifier:
         return utils.to_categorical(self.transform_encoder(category, test), len(self.get_inverted_subcategory(category)))
 
     @classmethod
-    def generate_model(cls, category):
+    def generate_model(cls, category, max_words):
         model = Sequential()
         model.add(Dense(512, input_shape=(max_words,)))
         model.add(Activation('relu'))
@@ -232,7 +232,6 @@ class Classifier:
         # print(predicted_label_fashion)
         # print(prediction_beauty)
         # print(prediction_mobile)
-
 
     @classmethod
     def plot_confusion_matrix(cls, cm, classes,

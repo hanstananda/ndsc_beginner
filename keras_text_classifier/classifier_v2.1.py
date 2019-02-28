@@ -3,20 +3,13 @@ import itertools
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import tensorflow as tf
 from keras.callbacks import ModelCheckpoint
+import tensorflow_hub as hub
 from keras_preprocessing.sequence import pad_sequences
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.linear_model import LogisticRegression
-
 from sklearn.utils import shuffle
-from sklearn.preprocessing import LabelBinarizer, LabelEncoder
-from sklearn.metrics import confusion_matrix
 
-from tensorflow import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM, Bidirectional
+from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -32,6 +25,8 @@ inverted_categories_beauty = {v: k.lower() for k, v in categories['Beauty'].item
 all_subcategories = {k.lower(): v for k, v in categories['Mobile'].items()}
 all_subcategories.update({k.lower(): v for k, v in categories['Fashion'].items()})
 all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()})
+embed = hub.Module("https://tfhub.dev/google/nnlm-id-dim128/1")
+
 
 # Main settings
 plot_history_check = True
@@ -70,7 +65,7 @@ validate_data_step = 1
 print(train_data_size, max_data_size)
 
 train_texts = trainData['title'][::train_data_step]
-train_tags = trainData['Category'][::train_data_step]
+train_tags = trainData['item_category'][::train_data_step]
 test_texts = testData['title']
 print(len(train_texts), len(train_tags))
 
