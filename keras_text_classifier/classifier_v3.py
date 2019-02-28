@@ -117,10 +117,10 @@ param_grid = dict(num_filters=[32, 64, 128],
                   max_length=[max_length])
 
 filepath = "../checkpoints/"+gen_filename_h5()+"v2.hdf5"
-checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+# checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 model = KerasClassifier(build_fn=create_model,
                         epochs=epochs, batch_size=batch_size,
-                        verbose=True, callbacks=[checkpointer])
+                        verbose=True)
 
 grid = RandomizedSearchCV(estimator=model, param_distributions=param_grid,
                               cv=4, verbose=1, n_iter=10)
