@@ -36,12 +36,12 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 # Main settings
 plot_history_check = True
 gen_test = True
-max_length = 50  # 32 is max word in train
+max_length = 1000  # 32 is max word in train
 num_classes = len(all_subcategories)
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 50
+epochs = 10
 
 print(all_subcategories)
 print("no of categories: " + str(num_classes))
@@ -87,6 +87,7 @@ x_test = pad_sequences(x_test, padding='post', maxlen=max_length)
 y_train = train_tags.values
 y_train = utils.to_categorical(y_train)
 vocab_size = len(tokenize.word_index) + 1
+print(vocab_size)
 
 # model 1
 # model = Sequential()
@@ -102,20 +103,35 @@ vocab_size = len(tokenize.word_index) + 1
 #               metrics=['accuracy'])
 
 # model 2
+# model = Sequential()
+# model.add(Embedding(vocab_size,
+#                     128,
+#                     input_length=max_length,
+#                     trainable=True))
+# model.add(LSTM(64))
+# model.add(Dense(64, activation='relu'))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+#
+# model.summary()
+
+
+# model 3
 model = Sequential()
 model.add(Embedding(vocab_size,
                     128,
                     input_length=max_length,
                     trainable=True))
-model.add(LSTM(64))
-model.add(Dense(64, activation='relu'))
+model.add(Conv1D(128, 5, activation='relu'))
+model.add(GlobalMaxPooling1D())
 model.add(Dense(num_classes, activation='softmax'))
 model.compile(optimizer='adam',
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 
 model.summary()
-
 
 def gen_filename_h5():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
@@ -126,7 +142,7 @@ def gen_filename_csv():
 
 
 # Checkpoint auto
-filepath = gen_filename_h5()+".hdf5"
+filepath = "../checkpoints/"+gen_filename_h5()+"v2.hdf5"
 checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
 history = model.fit([x_train], batch_size=batch_size, y=y_train, verbose=1, validation_split=0.1,
