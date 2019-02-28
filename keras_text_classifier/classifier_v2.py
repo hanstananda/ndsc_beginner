@@ -16,7 +16,7 @@ from sklearn.metrics import confusion_matrix
 
 from tensorflow import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM
+from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM, Bidirectional
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -35,10 +35,11 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 
 # Main settings
 plot_history_check = True
-gen_test = True
-max_length = 35  # 32 is max word in train, think need to test this later of the actual words need to be used...
+gen_test = False
+max_length = 35  # 32 is max word in train
+max_words = 1000
 num_classes = len(all_subcategories)
-# Training for more epochs will likely lead to overfitting on this dataset
+# Training for more epochs will likelval-acc after 10 epochs: 0.71306y lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
 epochs = 10
@@ -75,7 +76,7 @@ print(len(train_texts), len(train_tags))
 
 y = train_tags.values
 
-tokenize = text.Tokenizer(num_words=max_length, char_level=False)
+tokenize = text.Tokenizer(num_words=1000, char_level=False)
 tokenize.fit_on_texts(train_texts)  # only fit on train
 x_train = tokenize.texts_to_sequences(train_texts)
 x_test = tokenize.texts_to_sequences(test_texts)
@@ -89,27 +90,38 @@ y_train = utils.to_categorical(y_train)
 vocab_size = len(tokenize.word_index) + 1
 print(vocab_size)
 
+# Tested val-acc parameter:
+# max_length = 35, max_words = 1000
+
 # model 1 : Embedding with normal Dense NN Softmax
+# max val-acc after 10 epochs: 0.70347
+
 # model = Sequential()
-# model.add(Embedding(vocab_size,
+# model.add(Embedding(max_words,
 #                     128,
 #                     input_length=max_length,
 #                     trainable=True))
 # model.add(Flatten())
 # model.add(Dense(64, activation='relu'))
+# model.add(Dropout(0.5))
 # model.add(Dense(num_classes, activation='softmax'))
 # model.compile(optimizer='adam',
 #               loss='categorical_crossentropy',
 #               metrics=['accuracy'])
+# model.summary()
 
 # model 2 : Embedding with LSTM RNN
+# max val-acc after 10 epochs: 0.71602 (high chance for bigger accuracy for further epochs)
+# Additional note: The training time is freaking longer than others, more than 3 times model 1!
+# Also, the relu dense layer is not used for now
+
 # model = Sequential()
-# model.add(Embedding(vocab_size,
+# model.add(Embedding(max_words,
 #                     128,
 #                     input_length=max_length,
 #                     trainable=True))
-# model.add(LSTM(64))
-# model.add(Dense(64, activation='relu'))
+# model.add(Bidirectional(LSTM(100)))
+# # model.add(Dense(64, activation='relu'))
 # model.add(Dense(num_classes, activation='softmax'))
 # model.compile(optimizer='adam',
 #               loss='categorical_crossentropy',
@@ -119,8 +131,10 @@ print(vocab_size)
 
 
 # model 3 : Embedding with Convolutional NN
+# val-acc after 10 epochs: 0.71306
+
 model = Sequential()
-model.add(Embedding(vocab_size,
+model.add(Embedding(max_words,
                     128,
                     input_length=max_length,
                     trainable=True))
@@ -133,6 +147,33 @@ model.compile(optimizer='adam',
               metrics=['accuracy'])
 
 model.summary()
+
+
+
+# model 3.1 : Embedding with multilevel CNN
+# Note: Still error when tested, may need to refer back to notes XD
+
+# model = Sequential()
+# model.add(Embedding(max_words,
+#                     128,
+#                     input_length=max_length,
+#                     trainable=True))
+# model.add(Conv1D(128, 5, activation='relu'))
+# model.add(GlobalMaxPooling1D(5))
+# model.add(Conv1D(128, 5, activation='relu'))
+# model.add(GlobalMaxPooling1D(5))
+# model.add(Conv1D(128, 5, activation='relu'))
+# model.add(GlobalMaxPooling1D(35))
+# model.add(Flatten())
+# model.add(Dense(128, activation='relu'))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+#
+# model.summary()
+
+# model 4
 
 def gen_filename_h5():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")

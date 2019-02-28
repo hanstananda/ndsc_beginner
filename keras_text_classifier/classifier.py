@@ -123,6 +123,9 @@ batch_size = 256
 epochs = 1
 model_no = 1
 
+# Dropout is regularization technique to avoid overfitting (increase the validation accuracy)
+# thus increasing the generalizing power.
+
 # Build the model
 def model1():
     model = Sequential()
