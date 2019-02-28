@@ -3,18 +3,13 @@ import itertools
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import tensorflow as tf
-from keras.callbacks import ModelCheckpoint
+from keras.wrappers.scikit_learn import KerasClassifier
 from keras_preprocessing.sequence import pad_sequences
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.linear_model import LogisticRegression
+import joblib
+from sklearn.model_selection import RandomizedSearchCV
 
 from sklearn.utils import shuffle
-from sklearn.preprocessing import LabelBinarizer, LabelEncoder
-from sklearn.metrics import confusion_matrix
 
-from tensorflow import keras
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM
 from keras.preprocessing import text, sequence
@@ -41,7 +36,7 @@ num_classes = len(all_subcategories)
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 10
+epochs = 25
 
 print(all_subcategories)
 print("no of categories: " + str(num_classes))
@@ -89,50 +84,37 @@ y_train = utils.to_categorical(y_train)
 vocab_size = len(tokenize.word_index) + 1
 print(vocab_size)
 
-# model 1 : Embedding with normal Dense NN Softmax
-# model = Sequential()
-# model.add(Embedding(vocab_size,
-#                     128,
-#                     input_length=max_length,
-#                     trainable=True))
-# model.add(Flatten())
-# model.add(Dense(64, activation='relu'))
-# model.add(Dense(num_classes, activation='softmax'))
-# model.compile(optimizer='adam',
-#               loss='categorical_crossentropy',
-#               metrics=['accuracy'])
 
-# model 2 : Embedding with LSTM RNN
-# model = Sequential()
-# model.add(Embedding(vocab_size,
-#                     128,
-#                     input_length=max_length,
-#                     trainable=True))
-# model.add(LSTM(64))
-# model.add(Dense(64, activation='relu'))
-# model.add(Dense(num_classes, activation='softmax'))
-# model.compile(optimizer='adam',
-#               loss='categorical_crossentropy',
-#               metrics=['accuracy'])
-#
-# model.summary()
+def create_model(num_filters, kernel_size, vocab_size, embedding_dim, max_length):
+    model = Sequential()
+    model.add(Embedding(vocab_size,
+                        embedding_dim,
+                        input_length=max_length,
+                        trainable=True))
+    model.add(Conv1D(num_filters, kernel_size, activation='relu'))
+    model.add(GlobalMaxPooling1D())
+    model.add(Dense(embedding_dim, activation='relu'))
+    model.add(Dense(num_classes, activation='softmax'))
+    model.compile(optimizer='adam',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
+    return model
 
 
-# model 3 : Embedding with Convolutional NN
-model = Sequential()
-model.add(Embedding(vocab_size,
-                    128,
-                    input_length=max_length,
-                    trainable=True))
-model.add(Conv1D(128, 5, activation='relu'))
-model.add(GlobalMaxPooling1D())
-model.add(Dense(128, activation='relu'))
-model.add(Dense(num_classes, activation='softmax'))
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
+param_grid = dict(num_filters=[32, 64, 128],
+                  kernel_size=[3, 5, 7],
+                  vocab_size=[vocab_size],
+                  embedding_dim=[64, 128],
+                  max_length=[max_length])
 
-model.summary()
+model = KerasClassifier(build_fn=create_model,
+                        epochs=epochs, batch_size=batch_size,
+                        verbose=False)
+
+grid = RandomizedSearchCV(estimator=model, param_distributions=param_grid,
+                              cv=4, verbose=1, n_iter=10)
+grid_result = grid.fit(x_train, y_train)
+
 
 def gen_filename_h5():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
@@ -142,12 +124,8 @@ def gen_filename_csv():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
 
-# Checkpoint auto
-filepath = "../checkpoints/"+gen_filename_h5()+"v2.hdf5"
-checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
-
-history = model.fit([x_train], batch_size=batch_size, y=y_train, verbose=1, validation_split=0.1,
-                    shuffle=True, epochs=epochs, callbacks=[checkpointer])
+with open("../checkpoints/"+gen_filename_h5()+".pickle","w+") as f:
+    joblib.dump(grid_result, f)
 
 
 def plot_history(history):
@@ -173,11 +151,11 @@ def plot_history(history):
 
 
 if plot_history_check:
-    plot_history(history)
+    plot_history(grid)
 
 
 def perform_test():
-    prediction = model.predict(x_test, batch_size=batch_size, verbose=1)
+    prediction = grid.predict(x_test, batch_size=batch_size, verbose=1)
     predicted_label = [np.argmax(prediction[i]) for i in range(len(x_test))]
     # print(predicted_label)
     df = pd.DataFrame({'itemid': testData['itemid'].astype(int), 'Category': predicted_label})
