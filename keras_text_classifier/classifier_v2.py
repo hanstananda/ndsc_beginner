@@ -113,7 +113,8 @@ print(vocab_size)
 # model.summary()
 
 # model 2 : Embedding with LSTM RNN
-# max val-acc after 10 epochs: 0.71602 (high chance for bigger accuracy for further epochs)
+# max val-acc after 10 epochs: 0.71602
+# max val-acc after 50 epochs: 0.71978
 # Additional note: The training time is freaking longer than others, more than 3 times model 1!
 
 model = Sequential()
