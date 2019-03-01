@@ -2,6 +2,8 @@ Seems good to be tested:
 https://towardsdatascience.com/transfer-learning-for-image-classification-using-keras-c47ccf09c8c8
 https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html
 https://towardsdatascience.com/basics-of-image-classification-with-keras-43779a299c8b
+https://towardsdatascience.com/image-recognition-with-keras-convolutional-neural-networks-e2af10a10114
+https://towardsdatascience.com/image-classification-python-keras-tutorial-kaggle-challenge-45a6332a58b8
 
 Directory classification:
 https://medium.com/@vijayabhaskar96/tutorial-image-classification-with-keras-flow-from-directory-and-generators-95f75ebe5720 --> used
