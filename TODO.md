@@ -1,0 +1,35 @@
+# To-do List:
+
+Here are the list of things to be done
+
+## Data Scientist Role
+
+- [ ]   Check maximum words in title of train data
+- [ ]   Check maximum characters in title of train data
+- [ ]   Check maximum words in title of test data
+- [ ]   Check maximum characters in title of test data
+- [ ]   Check from analysis in [kaggle](https://www.kaggle.com/chewzy/eda-for-ndsc-2019)
+- [ ]   Create list of irrelevant words to be omitted in all data 
+        List of words: ["wa", "murah", "termurah", "original", "satuan", "ready" ,"stok", "stock", "limited", "edition", "promo", "bulan", "ini", "gratis", "ongkir"]
+        
+### List of rules for the data 
+- [ ]   Create all characters lowercase
+- [ ]   Remove special characters
+- [ ]   
+- [ ]   Combine some keywords for more compact search (e.g "Lip stick" into "Lipstick", "30 ml" into "30ml", "Crop top" into "croptop", "l oreal" into "loreal")
+- [ ]   Apply words omission above
+
+## Machine Learning Designer Role
+
+- [x]   Test Convolutional Neural Network (CNN) on words_to_sequences
+        
+        Result is not so promising from test result
+- [x]   Test Recurrent Neural Network (RNN) on words_to_sequenes
+
+        Result is not so promising from test result
+- [ ]   Test CNN on words_to_sequences with divided categories
+- [ ]   Test RNN on words_to_sequences with divided categories
+- [ ]   Test Recurrent Neural Network (RNN) on words_to_matrix
+- [ ]   Test Convolutional Neural Network (CNN) on words_to_matrix
+- [ ]   Test Hypertune parameters (Examples on `keras_text_classifier/classivier_v3.py`)
+- [ ]   Try Image Classification based on 3 categories
