@@ -25,8 +25,6 @@ inverted_categories_beauty = {v: k.lower() for k, v in categories['Beauty'].item
 all_subcategories = {k.lower(): v for k, v in categories['Mobile'].items()}
 all_subcategories.update({k.lower(): v for k, v in categories['Fashion'].items()})
 all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()})
-embed = hub.Module("https://tfhub.dev/google/nnlm-id-dim128/1")
-
 
 # Main settings
 plot_history_check = True
@@ -53,7 +51,7 @@ directory_mapping = {
     'Mobile': 'mobile_image',
 }
 
-trainData = pd.read_csv("../data/train.csv")
+trainData = pd.read_csv("../data/train_with_cname.csv")
 
 # Shuffle train data
 trainData = shuffle(trainData)
@@ -69,21 +67,15 @@ train_tags = trainData['item_category'][::train_data_step]
 test_texts = testData['title']
 print(len(train_texts), len(train_tags))
 
-y = train_tags.values
+
 
 tokenize = text.Tokenizer(num_words=1000, char_level=False)
 tokenize.fit_on_texts(train_texts)  # only fit on train
 x_train = tokenize.texts_to_sequences(train_texts)
 x_test = tokenize.texts_to_sequences(test_texts)
 
-# Pad sequences with zeros
-x_train = pad_sequences(x_train, padding='post', maxlen=max_length)
-x_test = pad_sequences(x_test, padding='post', maxlen=max_length)
-
-y_train = train_tags.values
-y_train = utils.to_categorical(y_train)
-vocab_size = len(tokenize.word_index) + 1
-print(vocab_size)
+y_train = train_tags
+vocab_size = 128
 
 # Tested val-acc parameter:
 # max_length = 35, max_words = 1000
@@ -129,40 +121,15 @@ print(vocab_size)
 # val-acc after 10 epochs: 0.71306
 # Note : seems a bit less likely to increase
 
-model = Sequential()
-model.add(Embedding(max_words,
-                    128,
-                    input_length=max_length,
-                    trainable=True))
-model.add(Conv1D(128, 5, activation='relu'))
-model.add(GlobalMaxPooling1D())
-model.add(Dense(128, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(num_classes, activation='softmax'))
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
-
-model.summary()
-
-
-
-# model 3.1 : Embedding with multilevel CNN
-# Note: Still error when tested, may need to refer back to notes XD
-
 # model = Sequential()
 # model.add(Embedding(max_words,
 #                     128,
 #                     input_length=max_length,
 #                     trainable=True))
 # model.add(Conv1D(128, 5, activation='relu'))
-# model.add(GlobalMaxPooling1D(5))
-# model.add(Conv1D(128, 5, activation='relu'))
-# model.add(GlobalMaxPooling1D(5))
-# model.add(Conv1D(128, 5, activation='relu'))
-# model.add(GlobalMaxPooling1D(35))
-# model.add(Flatten())
+# model.add(GlobalMaxPooling1D())
 # model.add(Dense(128, activation='relu'))
+# model.add(Dropout(0.5))
 # model.add(Dense(num_classes, activation='softmax'))
 # model.compile(optimizer='adam',
 #               loss='categorical_crossentropy',
@@ -170,7 +137,31 @@ model.summary()
 #
 # model.summary()
 
-# model 4
+
+
+# model 3.1 : Embedding with multilevel CNN
+# Note: Still error when tested, may need to refer back to notes XD
+
+model = Sequential()
+model.add(Embedding(max_words,
+                    128,
+                    input_length=max_length,
+                    trainable=True))
+model.add(Conv1D(128, 5, activation='relu'))
+model.add(GlobalMaxPooling1D(5))
+model.add(Conv1D(128, 5, activation='relu'))
+model.add(GlobalMaxPooling1D(5))
+model.add(Conv1D(128, 5, activation='relu'))
+model.add(GlobalMaxPooling1D(35))
+model.add(Flatten())
+model.add(Dense(128, activation='relu'))
+model.add(Dense(num_classes, activation='softmax'))
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+model.summary()
+
 
 def gen_filename_h5():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
@@ -184,7 +175,7 @@ def gen_filename_csv():
 filepath = "../checkpoints/"+gen_filename_h5()+"v2.hdf5"
 checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
-history = model.fit([x_train], batch_size=batch_size, y=y_train, verbose=1, validation_split=0.1,
+history = model.fit(x_train, batch_size=batch_size, y=y_train, verbose=1, validation_split=0.1,
                     shuffle=True, epochs=epochs, callbacks=[checkpointer])
 
 

@@ -16,7 +16,8 @@ from sklearn.metrics import confusion_matrix
 
 from tensorflow import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM, Bidirectional
+from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM, \
+    Bidirectional, MaxPooling1D
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -35,14 +36,14 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 
 # Main settings
 plot_history_check = True
-gen_test = False
-max_length = 35  # 32 is max word in train
+gen_test = True
+max_length = 50  # 32 is max word in train
 max_words = 1000
 num_classes = len(all_subcategories)
 # Training for more epochs will likelval-acc after 10 epochs: 0.71306y lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 10
+epochs = 50
 
 print(all_subcategories)
 print("no of categories: " + str(num_classes))
@@ -95,6 +96,7 @@ print(vocab_size)
 
 # model 1 : Embedding with normal Dense NN Softmax
 # max val-acc after 10 epochs: 0.70347
+# max val-acc after 50 epochs: 0.70442
 
 # model = Sequential()
 # model.add(Embedding(max_words,
@@ -113,36 +115,14 @@ print(vocab_size)
 # model 2 : Embedding with LSTM RNN
 # max val-acc after 10 epochs: 0.71602 (high chance for bigger accuracy for further epochs)
 # Additional note: The training time is freaking longer than others, more than 3 times model 1!
-# Also, the relu dense layer is not used for now
-
-# model = Sequential()
-# model.add(Embedding(max_words,
-#                     128,
-#                     input_length=max_length,
-#                     trainable=True))
-# model.add(Bidirectional(LSTM(100)))
-# model.add(Dense(128, activation='relu'))
-# model.add(Dense(num_classes, activation='softmax'))
-# model.compile(optimizer='adam',
-#               loss='categorical_crossentropy',
-#               metrics=['accuracy'])
-#
-# model.summary()
-
-
-# model 3 : Embedding with Convolutional NN
-# val-acc after 10 epochs: 0.71306
-# Note : seems a bit less likely to increase
 
 model = Sequential()
 model.add(Embedding(max_words,
                     128,
                     input_length=max_length,
                     trainable=True))
-model.add(Conv1D(128, 5, activation='relu'))
-model.add(GlobalMaxPooling1D())
+model.add(Bidirectional(LSTM(100)))
 model.add(Dense(128, activation='relu'))
-model.add(Dropout(0.5))
 model.add(Dense(num_classes, activation='softmax'))
 model.compile(optimizer='adam',
               loss='categorical_crossentropy',
@@ -151,9 +131,9 @@ model.compile(optimizer='adam',
 model.summary()
 
 
-
-# model 3.1 : Embedding with multilevel CNN
-# Note: Still error when tested, may need to refer back to notes XD
+# model 3 : Embedding with Convolutional NN
+# val-acc after 10 epochs: 0.71306
+# val-acc after 50 epochs: 0.71369
 
 # model = Sequential()
 # model.add(Embedding(max_words,
@@ -161,13 +141,35 @@ model.summary()
 #                     input_length=max_length,
 #                     trainable=True))
 # model.add(Conv1D(128, 5, activation='relu'))
-# model.add(GlobalMaxPooling1D(5))
+# model.add(GlobalMaxPooling1D())
+# model.add(Dense(128, activation='relu'))
+# model.add(Dropout(0.5))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+#model.summary()
+
+
+
+# model 3.1 : Embedding with multilevel CNN
+# Note: Max val acc after 50epoch is 0.70544, converges alrd
+# Note: This one very long time to train, max length must also be 1000++
+
+# model = Sequential()
+# model.add(Embedding(max_words,
+#                     128,
+#                     input_length=max_length,
+#                     trainable=True))
 # model.add(Conv1D(128, 5, activation='relu'))
-# model.add(GlobalMaxPooling1D(5))
+# model.add(MaxPooling1D(5))
 # model.add(Conv1D(128, 5, activation='relu'))
-# model.add(GlobalMaxPooling1D(35))
+# model.add(MaxPooling1D(5))
+# model.add(Conv1D(128, 5, activation='relu'))
+# model.add(MaxPooling1D(5))
 # model.add(Flatten())
 # model.add(Dense(128, activation='relu'))
+# model.add(Dropout(0.5))
 # model.add(Dense(num_classes, activation='softmax'))
 # model.compile(optimizer='adam',
 #               loss='categorical_crossentropy',

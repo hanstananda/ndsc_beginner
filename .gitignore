@@ -108,3 +108,6 @@ venv.bak/
 
 # Saved models
 *.hdf5
+
+#TF-Hub cache files
+tf_cache/
