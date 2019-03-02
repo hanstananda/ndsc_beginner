@@ -39,7 +39,8 @@ num_classes = len(all_subcategories)
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 25
+epochs = 10
+max_words = 1000
 
 print(all_subcategories)
 print("no of categories: " + str(num_classes))
@@ -73,7 +74,7 @@ print(len(train_texts), len(train_tags))
 
 y = train_tags.values
 
-tokenize = text.Tokenizer(num_words=max_length, char_level=False)
+tokenize = text.Tokenizer(num_words=max_words, char_level=False)
 tokenize.fit_on_texts(train_texts)  # only fit on train
 x_train = tokenize.texts_to_sequences(train_texts)
 x_test = tokenize.texts_to_sequences(test_texts)
@@ -88,9 +89,9 @@ vocab_size = len(tokenize.word_index) + 1
 print(vocab_size)
 
 
-def create_model(num_filters, kernel_size, vocab_size, embedding_dim, max_length):
+def create_model(num_filters, kernel_size, max_words, embedding_dim, max_length):
     model = Sequential()
-    model.add(Embedding(vocab_size,
+    model.add(Embedding(max_words,
                         embedding_dim,
                         input_length=max_length,
                         trainable=True))
@@ -114,19 +115,27 @@ def gen_filename_csv():
 
 param_grid = dict(num_filters=[32, 64, 128],
                   kernel_size=[3, 5, 7],
-                  vocab_size=[vocab_size],
+                  max_words=[max_words],
                   embedding_dim=[64, 128],
                   max_length=[max_length])
 
 filepath = "../checkpoints/"+gen_filename_h5()+"v2.hdf5"
-# checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 model = KerasClassifier(build_fn=create_model,
-                        epochs=epochs, batch_size=batch_size,
-                        verbose=True)
+                        epochs=epochs,
+                        batch_size=batch_size,
+                        verbose=True,
+                        )
 
 grid = RandomizedSearchCV(estimator=model, param_distributions=param_grid,
                               cv=4, verbose=1, n_iter=10)
-grid_result = grid.fit(x_train, y_train)
+
+print(grid)
+
+grid_result = grid.fit(x_train,
+                       y_train,
+                       validation_split=0.1,
+                       callbacks=[checkpointer])
 
 
 with open("../checkpoints/"+gen_filename_h5()+".pickle","w+") as f:
