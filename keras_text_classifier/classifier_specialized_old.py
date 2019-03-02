@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from keras_preprocessing.sequence import pad_sequences
 
 from sklearn.utils import shuffle
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder
@@ -35,13 +36,14 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 # Main settings
 
 max_words = 2500
+max_length = 35
 plot_history_check = True
 gen_test = True
 
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 30
+epochs = 10
 
 print(all_subcategories)
 print("no of categories: " + str(len(all_subcategories)))
@@ -114,13 +116,20 @@ tokenize_beauty.fit_on_texts(train_texts_beauty)
 tokenize_mobile = text.Tokenizer(num_words=max_words, char_level=False)
 tokenize_mobile.fit_on_texts(train_texts_mobile)
 
-x_train_fashion = tokenize_fashion.texts_to_matrix(train_texts_fashion)
-x_train_beauty = tokenize_beauty.texts_to_matrix(train_texts_beauty)
-x_train_mobile = tokenize_mobile.texts_to_matrix(train_texts_mobile)
-x_test_fashion = tokenize_fashion.texts_to_matrix(test_texts_fashion)
-x_test_beauty = tokenize_beauty.texts_to_matrix(test_texts_beauty)
-x_test_mobile = tokenize_mobile.texts_to_matrix(test_texts_mobile)
+x_train_fashion = tokenize_fashion.texts_to_sequences(train_texts_fashion)
+x_train_beauty = tokenize_beauty.texts_to_sequences(train_texts_beauty)
+x_train_mobile = tokenize_mobile.texts_to_sequences(train_texts_mobile)
+x_test_fashion = tokenize_fashion.texts_to_sequences(test_texts_fashion)
+x_test_beauty = tokenize_beauty.texts_to_sequences(test_texts_beauty)
+x_test_mobile = tokenize_mobile.texts_to_sequences(test_texts_mobile)
 
+# Pad sequences with zeros
+x_train_fashion = pad_sequences(x_train_fashion, padding='post', maxlen=max_length)
+x_train_beauty = pad_sequences(x_train_beauty, padding='post', maxlen=max_length)
+x_train_mobile = pad_sequences(x_train_mobile, padding='post', maxlen=max_length)
+x_test_fashion = pad_sequences(x_test_fashion, padding='post', maxlen=max_length)
+x_test_beauty = pad_sequences(x_test_beauty, padding='post', maxlen=max_length)
+x_test_mobile = pad_sequences(x_test_mobile, padding='post', maxlen=max_length)
 
 encoder_fashion = LabelEncoder()
 encoder_fashion.fit(train_tags_fashion)
@@ -143,15 +152,19 @@ y_train_mobile = utils.to_categorical(y_train_mobile, num_classes_mobile)
 # Build the model
 def model_gen(num_classes):
     model = Sequential()
-    model.add(Dense(512, input_shape=(max_words,)))
-    model.add(Activation('relu'))
+    model.add(Embedding(max_words,
+                        128,
+                        input_length=max_length,
+                        trainable=True))
+    model.add(Conv1D(128, 5, activation='relu'))
+    model.add(GlobalMaxPooling1D())
+    model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(num_classes))
-    model.add(Activation('softmax'))
-
-    model.compile(loss='categorical_crossentropy',
-                  optimizer='adam',
+    model.add(Dense(num_classes, activation='softmax'))
+    model.compile(optimizer='adam',
+                  loss='categorical_crossentropy',
                   metrics=['accuracy'])
+    model.summary()
     return model
 
 
@@ -164,19 +177,19 @@ model_mobile = model_gen(num_classes_mobile)
 # You can see the validation loss decreasing slowly when you run this
 # Because val_loss is no longer decreasing we stop training to prevent overfitting
 
-history_fashion = model_fashion.fit(x_train_fashion, y_train_fashion,
+history_fashion = model_fashion.fit([x_train_fashion], y_train_fashion,
                                     batch_size=batch_size,
                                     epochs=epochs,
                                     verbose=1,
                                     validation_split=0.1)
 
-history_beauty = model_beauty.fit(x_train_beauty, y_train_beauty,
+history_beauty = model_beauty.fit([x_train_beauty], y_train_beauty,
                                    batch_size=batch_size,
                                    epochs=epochs,
                                    verbose=1,
                                    validation_split=0.1)
 
-history_mobile = model_mobile.fit(x_train_mobile, y_train_mobile,
+history_mobile = model_mobile.fit([x_train_mobile], y_train_mobile,
                                    batch_size=batch_size,
                                    epochs=epochs,
                                    verbose=1,
@@ -184,7 +197,7 @@ history_mobile = model_mobile.fit(x_train_mobile, y_train_mobile,
 
 
 def gen_filename_h5(history):
-    return 'epoch_'+str(epochs) + '_' + str(max_words) + '_' + \
+    return str(epochs) + '_' + str(max_words) + '_' + \
            str(history.history['val_acc'][-1]).replace('.', ',')[:5]
 
 
