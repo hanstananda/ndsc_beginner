@@ -1,6 +1,8 @@
 from datetime import datetime
 import itertools
 import json
+
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -13,7 +15,7 @@ from sklearn.metrics import confusion_matrix
 
 from tensorflow import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D
+from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Bidirectional, CuDNNLSTM
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -33,26 +35,41 @@ all_subcategories = {k.lower(): v for k, v in categories['Mobile'].items()}
 all_subcategories.update({k.lower(): v for k, v in categories['Fashion'].items()})
 all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()})
 
-glove_file = open('../data/glove.840B.300d.txt', "r", encoding="Latin-1")
-embeddings_index = {}
-for line in glove_file:
-    values = line.split()
-    word = ''.join(values[:-300])
-    coefs = np.asarray(values[-300:], dtype='float32')
-    # print(coefs)
-    embeddings_index[word] = coefs
+
+def update_embeddings_index():
+    embeddings_index = {}
+    for line in glove_file:
+        values = line.split()
+        word = ''.join(values[:-300])
+        coefs = np.asarray(values[-300:], dtype='float32')
+        # print(coefs)
+        embeddings_index[word] = coefs
+    return embeddings_index
+
+
+try:
+    joblib.load("../data/glove.840B.300d.joblib")
+    print("glove data loaded from joblib!")
+except:
+    print("glove data loaded from txt!")
+    glove_file = open('../data/glove.840B.300d.txt', "r", encoding="Latin-1")
+    embeddings_index = update_embeddings_index()
+    joblib.dump(embeddings_index, "../data/glove.840B.300d.joblib")
+    print("glove data saved to joblib!")
+
 
 # Main settings
 
 max_words = 2500
 max_length = 35
+EMBEDDING_DIM = 300
 plot_history_check = True
 gen_test = True
 
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 10
+epochs = 25
 
 print(all_subcategories)
 print("no of categories: " + str(len(all_subcategories)))
@@ -140,6 +157,25 @@ x_test_fashion = pad_sequences(x_test_fashion, padding='post', maxlen=max_length
 x_test_beauty = pad_sequences(x_test_beauty, padding='post', maxlen=max_length)
 x_test_mobile = pad_sequences(x_test_mobile, padding='post', maxlen=max_length)
 
+word_index_fashion = tokenize_fashion.word_index
+word_index_beauty = tokenize_beauty.word_index
+word_index_mobile = tokenize_mobile.word_index
+
+
+def get_embedding_matrix(word_index):
+    embedding_matrix = np.zeros((len(word_index) + 1, EMBEDDING_DIM))
+    for word, i in word_index.items():
+        embedding_vector = embeddings_index.get(word)
+        if embedding_vector is not None:
+            # words not found in embedding index will be all-zeros.
+            embedding_matrix[i] = embedding_vector
+    return embedding_matrix
+
+
+embedding_matrix_fashion = get_embedding_matrix(word_index_fashion)
+embedding_matrix_beauty = get_embedding_matrix(word_index_beauty)
+embedding_matrix_mobile = get_embedding_matrix(word_index_mobile)
+
 encoder_fashion = LabelEncoder()
 encoder_fashion.fit(train_tags_fashion)
 encoder_beauty = LabelEncoder()
@@ -159,27 +195,29 @@ y_train_mobile = utils.to_categorical(y_train_mobile, num_classes_mobile)
 
 
 # Build the model
-def model_gen(num_classes):
+def model_gen(num_classes, word_index, embedding_matrix):
     model = Sequential()
-    model.add(Embedding(max_words,
-                        128,
+    model.add(Embedding(len(word_index) + 1,
+                        300,
                         input_length=max_length,
+                        weights=[embedding_matrix],
                         trainable=True))
-    model.add(Conv1D(128, 5, activation='relu'))
-    model.add(GlobalMaxPooling1D())
-    model.add(Dense(128, activation='relu'))
+    model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
+    model.add(Bidirectional(CuDNNLSTM(128)))
+    model.add(Dense(512, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(num_classes, activation='softmax'))
     model.compile(optimizer='adam',
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
+
     model.summary()
     return model
 
 
-model_fashion = model_gen(num_classes_fashion)
-model_beauty = model_gen(num_classes_beauty)
-model_mobile = model_gen(num_classes_mobile)
+model_fashion = model_gen(num_classes_fashion, word_index_fashion, embedding_matrix_fashion)
+model_beauty = model_gen(num_classes_beauty, word_index_beauty, embedding_matrix_beauty)
+model_mobile = model_gen(num_classes_mobile, word_index_mobile, embedding_matrix_mobile)
 
 # model.fit trains the model
 # The validation_split param tells Keras what % of our training data should be used in the validation set
