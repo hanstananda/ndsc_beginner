@@ -104,7 +104,7 @@ print(vocab_size)
 #                     input_length=max_length,
 #                     trainable=True))
 # model.add(Flatten())
-# model.add(Dense(64, activation='relu'))
+# model.add(Dense(512, activation='relu'))
 # model.add(Dropout(0.5))
 # model.add(Dense(num_classes, activation='softmax'))
 # model.compile(optimizer='adam',

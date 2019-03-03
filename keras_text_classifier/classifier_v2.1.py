@@ -9,7 +9,8 @@ from keras_preprocessing.sequence import pad_sequences
 from sklearn.utils import shuffle
 
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM
+from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM, \
+    Bidirectional, CuDNNLSTM
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -17,6 +18,15 @@ import pandas as pd
 testData = pd.read_csv("../data/test.csv")
 dictData = pd.read_csv("../data/kata_dasar_kbbi.csv")
 categories_file = open("../data/categories.json", "r")
+glove_file = open('../data/glove.840B.300d.txt', "r", encoding="Latin-1")
+embeddings_index = {}
+for line in glove_file:
+    values = line.split()
+    word = ''.join(values[:-300])
+    coefs = np.asarray(values[-300:], dtype='float32')
+    # print(coefs)
+    embeddings_index[word] = coefs
+
 categories = json.load(categories_file)
 inverted_categories_mobile = {v: k.lower() for k, v in categories['Mobile'].items()}
 inverted_categories_fashion = {v: k.lower() for k, v in categories['Fashion'].items()}
@@ -31,6 +41,7 @@ plot_history_check = True
 gen_test = False
 max_length = 35  # 32 is max word in train
 max_words = 1000
+EMBEDDING_DIM = 300  # Based on the txt file: glove 300d
 num_classes = len(all_subcategories)
 # Training for more epochs will likelval-acc after 10 epochs: 0.71306y lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
@@ -74,22 +85,36 @@ tokenize.fit_on_texts(train_texts)  # only fit on train
 x_train = tokenize.texts_to_sequences(train_texts)
 x_test = tokenize.texts_to_sequences(test_texts)
 
-y_train = train_tags
-vocab_size = 128
+# Pad sequences with zeros
+x_train = pad_sequences(x_train, padding='post', maxlen=max_length)
+x_test = pad_sequences(x_test, padding='post', maxlen=max_length)
+
+y_train = train_tags.values
+y_train = utils.to_categorical(y_train)
+word_index = tokenize.word_index
+
+
+embedding_matrix = np.zeros((len(word_index) + 1, EMBEDDING_DIM))
+for word, i in word_index.items():
+    embedding_vector = embeddings_index.get(word)
+    if embedding_vector is not None:
+        # words not found in embedding index will be all-zeros.
+        embedding_matrix[i] = embedding_vector
 
 # Tested val-acc parameter:
 # max_length = 35, max_words = 1000
 
 # model 1 : Embedding with normal Dense NN Softmax
-# max val-acc after 10 epochs: 0.70347
+# max val-acc after 10 epochs: 0.71885
 
 # model = Sequential()
-# model.add(Embedding(max_words,
-#                     128,
+# model.add(Embedding(len(word_index) + 1,
+#                     300,
 #                     input_length=max_length,
+#                     weights=[embedding_matrix],
 #                     trainable=True))
 # model.add(Flatten())
-# model.add(Dense(64, activation='relu'))
+# model.add(Dense(512, activation='relu'))
 # model.add(Dropout(0.5))
 # model.add(Dense(num_classes, activation='softmax'))
 # model.compile(optimizer='adam',
@@ -98,27 +123,52 @@ vocab_size = 128
 # model.summary()
 
 # model 2 : Embedding with LSTM RNN
-# max val-acc after 10 epochs: 0.71602 (high chance for bigger accuracy for further epochs)
-# Additional note: The training time is freaking longer than others, more than 3 times model 1!
+# max val-acc after 10 epochs: 0.72440
+# Additional note: The training time is freaking longer than others w/o CUDNNLSTM
 # Also, the relu dense layer is not used for now
+# Note: Use LSTM if u want to use CPU
 
-# model = Sequential()
-# model.add(Embedding(max_words,
-#                     128,
-#                     input_length=max_length,
-#                     trainable=True))
-# model.add(Bidirectional(LSTM(100)))
-# model.add(Dense(128, activation='relu'))
-# model.add(Dense(num_classes, activation='softmax'))
-# model.compile(optimizer='adam',
-#               loss='categorical_crossentropy',
-#               metrics=['accuracy'])
-#
-# model.summary()
+model = Sequential()
+model.add(Embedding(len(word_index) + 1,
+                    300,
+                    input_length=max_length,
+                    weights=[embedding_matrix],
+                    trainable=True))
+model.add(Bidirectional(CuDNNLSTM(100)))
+model.add(Dense(512, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(num_classes, activation='softmax'))
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+model.summary()
+
+
+
+# model 2.1
+# max val-acc after 10 epochs: 0.73003
+
+model = Sequential()
+model.add(Embedding(len(word_index) + 1,
+                    300,
+                    input_length=max_length,
+                    weights=[embedding_matrix],
+                    trainable=True))
+model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
+model.add(Bidirectional(CuDNNLSTM(128)))
+model.add(Dense(256, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(num_classes, activation='softmax'))
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+
+model.summary()
 
 
 # model 3 : Embedding with Convolutional NN
-# val-acc after 10 epochs: 0.71306
+# val-acc after 10 epochs: 0.7159
 # Note : seems a bit less likely to increase
 
 # model = Sequential()
@@ -138,31 +188,6 @@ vocab_size = 128
 # model.summary()
 
 
-
-# model 3.1 : Embedding with multilevel CNN
-# Note: Still error when tested, may need to refer back to notes XD
-
-model = Sequential()
-model.add(Embedding(max_words,
-                    128,
-                    input_length=max_length,
-                    trainable=True))
-model.add(Conv1D(128, 5, activation='relu'))
-model.add(GlobalMaxPooling1D(5))
-model.add(Conv1D(128, 5, activation='relu'))
-model.add(GlobalMaxPooling1D(5))
-model.add(Conv1D(128, 5, activation='relu'))
-model.add(GlobalMaxPooling1D(35))
-model.add(Flatten())
-model.add(Dense(128, activation='relu'))
-model.add(Dense(num_classes, activation='softmax'))
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
-
-model.summary()
-
-
 def gen_filename_h5():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
@@ -175,7 +200,7 @@ def gen_filename_csv():
 filepath = "../checkpoints/"+gen_filename_h5()+"v2.hdf5"
 checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
-history = model.fit(x_train, batch_size=batch_size, y=y_train, verbose=1, validation_split=0.1,
+history = model.fit([x_train], batch_size=batch_size, y=y_train, verbose=1, validation_split=0.1,
                     shuffle=True, epochs=epochs, callbacks=[checkpointer])
 
 

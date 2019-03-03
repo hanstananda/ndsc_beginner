@@ -111,3 +111,6 @@ venv.bak/
 
 #TF-Hub cache files
 tf_cache/
+
+# Embedding files
+glove.*.txt
