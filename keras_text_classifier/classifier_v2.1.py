@@ -1,6 +1,8 @@
 from datetime import datetime
 import itertools
 import json
+
+import joblib
 import matplotlib.pyplot as plt
 import numpy as np
 from keras.callbacks import ModelCheckpoint
@@ -10,7 +12,7 @@ from sklearn.utils import shuffle
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM, \
-    Bidirectional, CuDNNLSTM
+    Bidirectional, CuDNNLSTM, MaxPooling1D, ConvLSTM2D, CuDNNGRU
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -18,14 +20,32 @@ import pandas as pd
 testData = pd.read_csv("../data/test.csv")
 dictData = pd.read_csv("../data/kata_dasar_kbbi.csv")
 categories_file = open("../data/categories.json", "r")
-glove_file = open('../data/glove.840B.300d.txt', "r", encoding="Latin-1")
-embeddings_index = {}
-for line in glove_file:
-    values = line.split()
-    word = ''.join(values[:-300])
-    coefs = np.asarray(values[-300:], dtype='float32')
-    # print(coefs)
-    embeddings_index[word] = coefs
+
+
+def update_embeddings_index():
+    embeddings_index = {}
+    for line in glove_file:
+        values = line.split()
+        word = ''.join(values[:-300])
+        coefs = np.asarray(values[-300:], dtype='float32')
+        # print(coefs)
+        embeddings_index[word] = coefs
+    return embeddings_index
+
+
+try:
+    print("using glove data from joblib...")
+    embeddings_index = joblib.load("../data/glove.840B.300d.joblib")
+    print("glove data loaded from joblib!")
+except:
+    print("using glove data from txt...")
+    glove_file = open('../data/glove.840B.300d.txt', "r", encoding="Latin-1")
+    embeddings_index = update_embeddings_index()
+    print("glove data loaded from txt!")
+    joblib.dump(embeddings_index, "../data/glove.840B.300d.joblib")
+    print("glove data saved to joblib!")
+
+
 
 categories = json.load(categories_file)
 inverted_categories_mobile = {v: k.lower() for k, v in categories['Mobile'].items()}
@@ -46,7 +66,7 @@ num_classes = len(all_subcategories)
 # Training for more epochs will likelval-acc after 10 epochs: 0.71306y lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 10
+epochs = 15
 
 print(all_subcategories)
 print("no of categories: " + str(num_classes))
@@ -149,32 +169,52 @@ for word, i in word_index.items():
 # model 2.1
 # max val-acc after 10 epochs: 0.73003
 
-model = Sequential()
-model.add(Embedding(len(word_index) + 1,
-                    300,
-                    input_length=max_length,
-                    weights=[embedding_matrix],
-                    trainable=True))
-model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
-model.add(Bidirectional(CuDNNLSTM(128)))
-model.add(Dense(512, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(num_classes, activation='softmax'))
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
+# model = Sequential()
+# model.add(Embedding(len(word_index) + 1,
+#                     300,
+#                     input_length=max_length,
+#                     weights=[embedding_matrix],
+#                     trainable=True))
+# model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
+# model.add(Bidirectional(CuDNNLSTM(128)))
+# model.add(Dense(512, activation='relu'))
+# model.add(Dropout(0.5))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+#
+# model.summary()
 
-model.summary()
+# model 2.2
+# max val-acc after 15 epochs: 0.72782 (converges then go down after that)
 
+# model = Sequential()
+# model.add(Embedding(len(word_index) + 1,
+#                     300,
+#                     input_length=max_length,
+#                     weights=[embedding_matrix],
+#                     trainable=True))
+# model.add(Bidirectional(CuDNNGRU(128, return_sequences=True)))
+# model.add(Bidirectional(CuDNNGRU(128)))
+# model.add(Dense(512, activation='relu'))
+# model.add(Dropout(0.5))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+#
+# model.summary()
 
 # model 3 : Embedding with Convolutional NN
-# val-acc after 10 epochs: 0.7159
+# val-acc after 10 epochs: 0.71
 # Note : seems a bit less likely to increase
 
 # model = Sequential()
-# model.add(Embedding(max_words,
-#                     128,
+# model.add(Embedding(len(word_index) + 1,
+#                     300,
 #                     input_length=max_length,
+#                     weights=[embedding_matrix],
 #                     trainable=True))
 # model.add(Conv1D(128, 5, activation='relu'))
 # model.add(GlobalMaxPooling1D())

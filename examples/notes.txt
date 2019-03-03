@@ -13,4 +13,4 @@ https://cloud.google.com/blog/products/gcp/intro-to-text-classification-with-ker
 https://towardsdatascience.com/elmo-embeddings-in-keras-with-tensorflow-hub-7eb6f0145440
 https://realpython.com/python-keras-text-classification/ --> Advanced trials
 https://medium.com/jatana/report-on-text-classification-using-cnn-rnn-han-f0e887214d5f --> More comparison
-https://blog.keras.io/using-pre-trained-word-embeddings-in-a-keras-model.html
+https://blog.keras.io/using-pre-trained-word-embeddings-in-a-keras-model.html --> done on classifierv2.1.py

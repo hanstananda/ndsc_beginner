@@ -48,12 +48,14 @@ def update_embeddings_index():
 
 
 try:
-    joblib.load("../data/glove.840B.300d.joblib")
+    print("using glove data from joblib...")
+    embeddings_index = joblib.load("../data/glove.840B.300d.joblib")
     print("glove data loaded from joblib!")
 except:
-    print("glove data loaded from txt!")
+    print("using glove data from txt...")
     glove_file = open('../data/glove.840B.300d.txt', "r", encoding="Latin-1")
     embeddings_index = update_embeddings_index()
+    print("glove data loaded from txt!")
     joblib.dump(embeddings_index, "../data/glove.840B.300d.joblib")
     print("glove data saved to joblib!")
 
@@ -202,8 +204,8 @@ def model_gen(num_classes, word_index, embedding_matrix):
                         input_length=max_length,
                         weights=[embedding_matrix],
                         trainable=True))
-    model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
-    model.add(Bidirectional(CuDNNLSTM(128)))
+    model.add(Bidirectional(CuDNNLSTM(256, return_sequences=True)))
+    model.add(Bidirectional(CuDNNLSTM(256)))
     model.add(Dense(512, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(num_classes, activation='softmax'))
