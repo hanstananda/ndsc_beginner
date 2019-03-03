@@ -74,7 +74,7 @@ validate_data_step = 1
 print(train_data_size, max_data_size)
 
 train_texts = trainData['title'][::train_data_step]
-train_tags = trainData['item_category'][::train_data_step]
+train_tags = trainData['Category'][::train_data_step]
 test_texts = testData['title']
 print(len(train_texts), len(train_tags))
 
@@ -128,21 +128,21 @@ for word, i in word_index.items():
 # Also, the relu dense layer is not used for now
 # Note: Use LSTM if u want to use CPU
 
-model = Sequential()
-model.add(Embedding(len(word_index) + 1,
-                    300,
-                    input_length=max_length,
-                    weights=[embedding_matrix],
-                    trainable=True))
-model.add(Bidirectional(CuDNNLSTM(100)))
-model.add(Dense(512, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(num_classes, activation='softmax'))
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
-
-model.summary()
+# model = Sequential()
+# model.add(Embedding(len(word_index) + 1,
+#                     300,
+#                     input_length=max_length,
+#                     weights=[embedding_matrix],
+#                     trainable=True))
+# model.add(Bidirectional(CuDNNLSTM(100)))
+# model.add(Dense(512, activation='relu'))
+# model.add(Dropout(0.5))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+#
+# model.summary()
 
 
 
@@ -157,7 +157,7 @@ model.add(Embedding(len(word_index) + 1,
                     trainable=True))
 model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
 model.add(Bidirectional(CuDNNLSTM(128)))
-model.add(Dense(256, activation='relu'))
+model.add(Dense(512, activation='relu'))
 model.add(Dropout(0.5))
 model.add(Dense(num_classes, activation='softmax'))
 model.compile(optimizer='adam',

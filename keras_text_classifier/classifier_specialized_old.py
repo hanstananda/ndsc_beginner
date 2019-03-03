@@ -33,6 +33,15 @@ all_subcategories = {k.lower(): v for k, v in categories['Mobile'].items()}
 all_subcategories.update({k.lower(): v for k, v in categories['Fashion'].items()})
 all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()})
 
+glove_file = open('../data/glove.840B.300d.txt', "r", encoding="Latin-1")
+embeddings_index = {}
+for line in glove_file:
+    values = line.split()
+    word = ''.join(values[:-300])
+    coefs = np.asarray(values[-300:], dtype='float32')
+    # print(coefs)
+    embeddings_index[word] = coefs
+
 # Main settings
 
 max_words = 2500
