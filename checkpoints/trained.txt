@@ -1,2 +1,0 @@
-1551121048: 55% accuracy checkpoint Fashion 1000 each, epoch=100
-1441152971: 56% accuracy checkpoint Fashion 1000 each, epoch=100
