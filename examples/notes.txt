@@ -2,12 +2,15 @@ Seems good to be tested:
 https://towardsdatascience.com/transfer-learning-for-image-classification-using-keras-c47ccf09c8c8
 https://blog.keras.io/building-powerful-image-classification-models-using-very-little-data.html
 https://towardsdatascience.com/basics-of-image-classification-with-keras-43779a299c8b
+https://towardsdatascience.com/image-recognition-with-keras-convolutional-neural-networks-e2af10a10114
+https://towardsdatascience.com/image-classification-python-keras-tutorial-kaggle-challenge-45a6332a58b8
 
 Directory classification:
-https://medium.com/@vijayabhaskar96/tutorial-image-classification-with-keras-flow-from-directory-and-generators-95f75ebe5720 --> used
+https://medium.com/@vijayabhaskar96/tutorial-image-classification-with-keras-flow-from-directory-and-generators-95f75ebe5720 --> used for image classification
 
 Text classification:
-https://cloud.google.com/blog/products/gcp/intro-to-text-classification-with-keras-automatically-tagging-stack-overflow-posts --> tested
-https://towardsdatascience.com/elmo-embeddings-in-keras-with-tensorflow-hub-7eb6f0145440
-# https://realpython.com/python-keras-text-classification/ --> Advanced trials
-https://medium.com/jatana/report-on-text-classification-using-cnn-rnn-han-f0e887214d5f --> More comparison
+https://cloud.google.com/blog/products/gcp/intro-to-text-classification-with-keras-automatically-tagging-stack-overflow-posts --> tested on classifier.py
+https://towardsdatascience.com/elmo-embeddings-in-keras-with-tensorflow-hub-7eb6f0145440 --> more or less done using glove on classifier_v2.1.py
+https://realpython.com/python-keras-text-classification/ --> Advanced trials, done on classifier_v2.py, classifier_v3.py
+https://medium.com/jatana/report-on-text-classification-using-cnn-rnn-han-f0e887214d5f --> done on classifier_v2.1.py
+https://blog.keras.io/using-pre-trained-word-embeddings-in-a-keras-model.html --> done on classifier_v2.1.py
