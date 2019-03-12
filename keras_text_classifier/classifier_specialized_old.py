@@ -71,7 +71,7 @@ gen_test = True
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 25
+epochs = 12
 
 print(all_subcategories)
 print("no of categories: " + str(len(all_subcategories)))
@@ -87,12 +87,13 @@ directory_mapping = {
     'Mobile': 'mobile_image',
 }
 
+filename = "new_train"
 try:
-    trainData = pd.read_csv("../data/train_with_cname.csv")
+    trainData = pd.read_csv("../data/"+filename+"_with_cname.csv")
     print("custom train data used")
 except:
     print("cannot find custom data, generating...")
-    trainData = pd.read_csv("../data/train.csv")
+    trainData = pd.read_csv("../data/"+filename+".csv")
     trainData['item_category'] = 'None'
     for index, row in trainData.iterrows():
         s = row["title"]
@@ -107,7 +108,7 @@ except:
         # trainData.set_value(index, 'item_category', sub_cats[row['Category']])
         trainData.at[index, 'item_category'] = sub_cats[row['Category']]
     try:
-        trainData.to_csv(path_or_buf='../data/train_with_cname.csv', index=False)
+        trainData.to_csv(path_or_buf='../data/'+filename+'_with_cname.csv', index=False)
     except:
         trainData.to_csv(path_or_buf='train_with_cname.csv', index=False)
 
@@ -135,7 +136,6 @@ test_texts_mobile = test_data_mobile['title']
 train_tags_fashion = train_data_fashion['item_category']
 train_tags_beauty = train_data_beauty['item_category']
 train_tags_mobile = train_data_mobile['item_category']
-
 
 tokenize_fashion = text.Tokenizer(num_words=max_words, char_level=False)
 tokenize_fashion.fit_on_texts(train_texts_fashion)
