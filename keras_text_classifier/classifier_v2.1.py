@@ -16,8 +16,9 @@ from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMa
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
+from utility.train_data_loder import load_train_data
 
-testData = pd.read_csv("../data/test.csv")
+testData = pd.read_csv("../data/new_test.csv")
 dictData = pd.read_csv("../data/kata_dasar_kbbi.csv")
 categories_file = open("../data/categories.json", "r")
 
@@ -82,7 +83,7 @@ directory_mapping = {
     'Mobile': 'mobile_image',
 }
 
-trainData = pd.read_csv("../data/train_with_cname.csv")
+trainData = load_train_data()
 
 # Shuffle train data
 trainData = shuffle(trainData)
@@ -127,20 +128,20 @@ for word, i in word_index.items():
 # model 1 : Embedding with normal Dense NN Softmax
 # max val-acc after 10 epochs: 0.71885
 
-# model = Sequential()
-# model.add(Embedding(len(word_index) + 1,
-#                     300,
-#                     input_length=max_length,
-#                     weights=[embedding_matrix],
-#                     trainable=True))
-# model.add(Flatten())
-# model.add(Dense(512, activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Dense(num_classes, activation='softmax'))
-# model.compile(optimizer='adam',
-#               loss='categorical_crossentropy',
-#               metrics=['accuracy'])
-# model.summary()
+model = Sequential()
+model.add(Embedding(len(word_index) + 1,
+                    300,
+                    input_length=max_length,
+                    weights=[embedding_matrix],
+                    trainable=True))
+model.add(Flatten())
+model.add(Dense(512, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(num_classes, activation='softmax'))
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+model.summary()
 
 # model 2 : Embedding with LSTM RNN
 # max val-acc after 10 epochs: 0.72440

@@ -22,6 +22,8 @@ from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
 
+from utility.train_data_loder import load_train_data
+
 testData = pd.read_csv("../data/test.csv")
 dictData = pd.read_csv("../data/kata_dasar_kbbi.csv")
 categories_file = open("../data/categories.json", "r")
@@ -59,7 +61,7 @@ directory_mapping = {
     'Mobile': 'mobile_image',
 }
 
-trainData = pd.read_csv("../data/train.csv")
+trainData = load_train_data()
 
 # Shuffle train data
 trainData = shuffle(trainData)
@@ -98,38 +100,38 @@ print(vocab_size)
 # max val-acc after 10 epochs: 0.70347
 # max val-acc after 50 epochs: 0.70442
 
-# model = Sequential()
-# model.add(Embedding(max_words,
-#                     128,
-#                     input_length=max_length,
-#                     trainable=True))
-# model.add(Flatten())
-# model.add(Dense(512, activation='relu'))
-# model.add(Dropout(0.5))
-# model.add(Dense(num_classes, activation='softmax'))
-# model.compile(optimizer='adam',
-#               loss='categorical_crossentropy',
-#               metrics=['accuracy'])
-# model.summary()
+model = Sequential()
+model.add(Embedding(max_words,
+                    128,
+                    input_length=max_length,
+                    trainable=True))
+model.add(Flatten())
+model.add(Dense(512, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(num_classes, activation='softmax'))
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+model.summary()
 
 # model 2 : Embedding with LSTM RNN
 # max val-acc after 10 epochs: 0.71602
 # max val-acc after 50 epochs: 0.71978
 # Additional note: The training time is freaking longer than others, more than 3 times model 1!
 
-model = Sequential()
-model.add(Embedding(max_words,
-                    128,
-                    input_length=max_length,
-                    trainable=True))
-model.add(Bidirectional(LSTM(100)))
-model.add(Dense(128, activation='relu'))
-model.add(Dense(num_classes, activation='softmax'))
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
-
-model.summary()
+# model = Sequential()
+# model.add(Embedding(max_words,
+#                     128,
+#                     input_length=max_length,
+#                     trainable=True))
+# model.add(Bidirectional(LSTM(100)))
+# model.add(Dense(128, activation='relu'))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+#
+# model.summary()
 
 
 # model 3 : Embedding with Convolutional NN
