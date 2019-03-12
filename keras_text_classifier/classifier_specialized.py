@@ -15,7 +15,6 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D
 from keras.preprocessing import text, sequence
 from keras import utils
-import pandas as pd
 
 
 class Classifier:
@@ -88,10 +87,10 @@ class Classifier:
             print("cannot find custom data, generating...")
             self.train_data = pd.read_csv(self.train_data_path)
             self.train_data['item_category'] = 'None'
-            for index, row in trainData.iterrows():
+            for index, row in self.train_data.iterrows():
                 s = row["title"]
                 img_path = row["image_path"]
-                cat = category_mapping[img_path.split('/')[0]]
+                cat = self.category_mapping[img_path.split('/')[0]]
                 if cat == 'Fashion':
                     sub_cats = self.get_inverted_subcategory('Fashion')
                 elif cat == 'Mobile':
@@ -121,10 +120,10 @@ class Classifier:
     def get_train_data(self, category, test=False):
         if test:
             self.load_test_data()
-            return self.test_data[self.test_data['imagepath'].str.contains(category)]
+            return self.test_data[self.test_data['image_path'].str.contains(category)]
         else:
             self.load_train_data()
-            return self.train_data[self.train_data['imagepath'].str.contains(category)]
+            return self.train_data[self.train_data['image_path'].str.contains(category)]
 
     def shuffle_train_data(self, category, test=False):
         return shuffle(self.get_train_data(category, test))
@@ -151,13 +150,12 @@ class Classifier:
     def one_hot_repr(self, category, test=False):
         return utils.to_categorical(self.transform_encoder(category, test), len(self.get_inverted_subcategory(category)))
 
-    @classmethod
-    def generate_model(cls, category):
+    def generate_model(self, category):
         model = Sequential()
-        model.add(Dense(512, input_shape=(max_words,)))
+        model.add(Dense(512, input_shape=(self.max_words,)))
         model.add(Activation('relu'))
         model.add(Dropout(0.5))
-        model.add(Dense(len(cls.get_inverted_subcategory(category))))
+        model.add(Dense(len(self.get_inverted_subcategory(category))))
         model.add(Activation('softmax'))
 
         model.compile(loss='categorical_crossentropy',
@@ -233,7 +231,6 @@ class Classifier:
         # print(prediction_beauty)
         # print(prediction_mobile)
 
-
     @classmethod
     def plot_confusion_matrix(cls, cm, classes,
                               title='Confusion matrix',
@@ -286,13 +283,28 @@ class Classifier:
         plt.show()
 
 
+classifier = Classifier()
 
+test_data_fashion = classifier.get_train_data('fashion', True).astype(int)
+test_data_beauty = classifier.get_train_data('beauty', True).astype(int)
+test_data_mobile = classifier.get_train_data('mobile', True).astype(int)
+
+predicted_label_fashion = classifier.perform_test('fashion')
+predicted_label_beauty = classifier.perform_test('beauty')
+predicted_label_mobile = classifier.perform_test('mobile')
+
+
+df = pd.DataFrame({'itemid': test_data_fashion, 'Category': predicted_label_fashion})
+df = df.append(pd.DataFrame({'itemid': test_data_beauty, 'Category': predicted_label_beauty}))
+df = df.append(pd.DataFrame({'itemid': test_data_mobile, 'Category': predicted_label_mobile}))
+
+df.to_csv('res' + classifier.gen_filename_csv() + '.csv', index=False)
 
 # df = pd.DataFrame({'itemid': test_data_fashion['itemid'].astype(int), 'Category': predicted_label_fashion})
 # df = df.append(pd.DataFrame({'itemid': test_data_beauty['itemid'].astype(int), 'Category': predicted_label_beauty}))
 # df = df.append(pd.DataFrame({'itemid': test_data_mobile['itemid'].astype(int), 'Category': predicted_label_mobile}))
 
-df = Classifier.perform_test('Fashion')
+# df = Classifier.perform_test('Fashion')
 
 # df.to_csv(path_or_buf='res' + gen_filename_csv() + '.csv', index=False)
 
