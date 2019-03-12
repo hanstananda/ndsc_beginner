@@ -4,16 +4,14 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import tensorflow as tf
 
 from sklearn.utils import shuffle
-from sklearn.preprocessing import LabelBinarizer, LabelEncoder
+from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import confusion_matrix
 
-from tensorflow import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D
-from keras.preprocessing import text, sequence
+from keras.layers import Dense, Activation, Dropout
+from keras.preprocessing import text
 from keras import utils
 
 
@@ -70,6 +68,10 @@ class Classifier:
 
         self.encoder = LabelEncoder()
 
+        self.load_test_data()
+        self.load_dic_data()
+        self.load_categories()
+
     def load_test_data(self):
         self.test_data = pd.read_csv(self.test_data_path)
 
@@ -77,7 +79,8 @@ class Classifier:
         self.dict_data = pd.read_csv(self.dict_data_path)
 
     def load_categories(self):
-        self.categories = json.load(self.categories_path)
+        o = open(self.categories_path, "r")
+        self.categories = json.load(o)
 
     def load_train_data(self):
         try:
@@ -112,7 +115,7 @@ class Classifier:
         return all_subcategories
 
     def get_inverted_subcategory(self, category):
-        return {v: k.lower() for k, v in self.categories[category].items()}
+        return {v: k.lower() for k, v in self.categories[category.capitalize()].items()}
 
     def get_subcategory(self, category):
         return {k.lower(): v for k, v in self.categories[category].items()}
@@ -122,6 +125,7 @@ class Classifier:
             self.load_test_data()
             return self.test_data[self.test_data['image_path'].str.contains(category)]
         else:
+            print('get_train_data')
             self.load_train_data()
             return self.train_data[self.train_data['image_path'].str.contains(category)]
 
@@ -129,9 +133,11 @@ class Classifier:
         return shuffle(self.get_train_data(category, test))
 
     def get_train_text(self, category, test=False):
-        return self.shuffle_train_data(category, test)['title']
+        print('shuffle')
+        return self.get_train_data(category, test)['title']
 
     def get_train_tag(self, category, test=False):
+        print('get train tag')
         return self.shuffle_train_data(category, test)['item_category']
 
     def tokenize(self, category, test=False):
@@ -139,12 +145,14 @@ class Classifier:
         self.tokenizer.fit_on_texts(self.get_train_text(category, test))
 
     def text_to_matrix(self, category, test=False):
+        self.tokenize(category, test)
         return self.tokenizer.texts_to_matrix(self.get_train_text(category, test))
 
     def fit_encoder(self, category, test=False):
         return self.encoder.fit(self.get_train_tag(category, test))
 
     def transform_encoder(self, category, test=False):
+        self.fit_encoder(category, test)
         return self.encoder.transform(self.get_train_tag(category, test))
 
     def one_hot_repr(self, category, test=False):
@@ -198,7 +206,7 @@ class Classifier:
 
     def train(self, category, test=False):
         model = self.generate_model(category)
-        model.fit(
+        return model.fit(
             self.text_to_matrix(category, test),
             self.one_hot_repr(category, test),
             batch_size=self.batch_size,
@@ -209,17 +217,17 @@ class Classifier:
         # if self.plot_history_check:
         #     self.plot_history(model)
 
-        return model
+        # return model
 
     def save(self, category, test=False):
         name = 'model_' + str(category) + '_' + self.gen_filename_h5(self.train(category, test)) + '.h5'
-        self.generate_model(category).save(name)
+        return self.generate_model(category).save(name)
 
     def perform_test(self, category):
-        prediction = self.generate_model(category)
-        prediction.predict(self.text_to_matrix(category, test=True), self.batch_size, verbose=1)
+        model = self.save(category, False)
+        prediction = model.predict(self.text_to_matrix(category, test=True), self.batch_size, verbose=1)
         all_subcategories = self.get_all_subcategories()
-        predicted_label = [all_subcategories[self.fit_encoder(category, True).classes_[np.argmax(prediction[i])]]
+        predicted_label = [all_subcategories[self.fit_encoder(category, False).classes_[np.argmax(prediction[i])]]
                            for i in range(len(self.text_to_matrix(category, test=True)))
                            ]
         return predicted_label
@@ -285,13 +293,13 @@ class Classifier:
 
 classifier = Classifier()
 
-test_data_fashion = classifier.get_train_data('fashion', True).astype(int)
-test_data_beauty = classifier.get_train_data('beauty', True).astype(int)
-test_data_mobile = classifier.get_train_data('mobile', True).astype(int)
+test_data_fashion = classifier.get_train_data('fashion', True)['itemid'].astype(int)
+test_data_beauty = classifier.get_train_data('beauty', True)['itemid'].astype(int)
+test_data_mobile = classifier.get_train_data('mobile', True)['itemid'].astype(int)
 
-predicted_label_fashion = classifier.perform_test('fashion')
-predicted_label_beauty = classifier.perform_test('beauty')
-predicted_label_mobile = classifier.perform_test('mobile')
+predicted_label_fashion = classifier.perform_test('Fashion')
+predicted_label_beauty = classifier.perform_test('Beauty')
+predicted_label_mobile = classifier.perform_test('Mobile')
 
 
 df = pd.DataFrame({'itemid': test_data_fashion, 'Category': predicted_label_fashion})
@@ -299,17 +307,3 @@ df = df.append(pd.DataFrame({'itemid': test_data_beauty, 'Category': predicted_l
 df = df.append(pd.DataFrame({'itemid': test_data_mobile, 'Category': predicted_label_mobile}))
 
 df.to_csv('res' + classifier.gen_filename_csv() + '.csv', index=False)
-
-# df = pd.DataFrame({'itemid': test_data_fashion['itemid'].astype(int), 'Category': predicted_label_fashion})
-# df = df.append(pd.DataFrame({'itemid': test_data_beauty['itemid'].astype(int), 'Category': predicted_label_beauty}))
-# df = df.append(pd.DataFrame({'itemid': test_data_mobile['itemid'].astype(int), 'Category': predicted_label_mobile}))
-
-# df = Classifier.perform_test('Fashion')
-
-# df.to_csv(path_or_buf='res' + gen_filename_csv() + '.csv', index=False)
-
-
-# if gen_test:
-#     perform_test()
-#
-
