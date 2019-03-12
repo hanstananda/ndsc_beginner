@@ -221,7 +221,9 @@ class Classifier:
 
     def save(self, category, test=False):
         name = 'model_' + str(category) + '_' + self.gen_filename_h5(self.train(category, test)) + '.h5'
-        return self.generate_model(category).save(name)
+        model = self.generate_model(category)
+        model.save(name)
+        return model
 
     def perform_test(self, category):
         model = self.save(category, False)
@@ -297,9 +299,9 @@ test_data_fashion = classifier.get_train_data('fashion', True)['itemid'].astype(
 test_data_beauty = classifier.get_train_data('beauty', True)['itemid'].astype(int)
 test_data_mobile = classifier.get_train_data('mobile', True)['itemid'].astype(int)
 
-predicted_label_fashion = classifier.perform_test('Fashion')
-predicted_label_beauty = classifier.perform_test('Beauty')
-predicted_label_mobile = classifier.perform_test('Mobile')
+predicted_label_fashion = classifier.perform_test('fashion')
+predicted_label_beauty = classifier.perform_test('beauty')
+predicted_label_mobile = classifier.perform_test('mobile')
 
 
 df = pd.DataFrame({'itemid': test_data_fashion, 'Category': predicted_label_fashion})
