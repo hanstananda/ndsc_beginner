@@ -22,7 +22,7 @@ from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
 
-from utility.train_data_loder import load_train_data
+from utility.train_data_loader import load_train_data
 
 testData = pd.read_csv("../data/test.csv")
 dictData = pd.read_csv("../data/kata_dasar_kbbi.csv")

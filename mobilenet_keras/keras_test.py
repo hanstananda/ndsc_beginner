@@ -46,6 +46,7 @@ model.compile(
     loss='categorical_crossentropy',
     metrics=['accuracy'])
 
+
 class CollectBatchStats(tf.keras.callbacks.Callback):
     def __init__(self):
         self.batch_losses = []
