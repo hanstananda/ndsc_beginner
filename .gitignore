@@ -108,6 +108,11 @@ venv.bak/
 
 # Saved models
 *.hdf5
+checkpoints/
 
 #TF-Hub cache files
 tf_cache/
+
+# Embedding files
+glove.840B.300d.joblib
+glove.840B.300d.txt
