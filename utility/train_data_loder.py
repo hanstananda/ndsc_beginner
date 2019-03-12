@@ -16,12 +16,13 @@ category_mapping = {
 
 
 def load_train_data():
+    filename = "new_train"
     try:
-        trainData = pd.read_csv("../data/train_with_cname.csv")
+        trainData = pd.read_csv("../data/" + filename + "_with_cname.csv")
         print("custom train data used")
     except:
         print("cannot find custom data, generating...")
-        trainData = pd.read_csv("../data/train.csv")
+        trainData = pd.read_csv("../data/" + filename + ".csv")
         trainData['item_category'] = 'None'
         for index, row in trainData.iterrows():
             s = row["title"]
@@ -36,8 +37,8 @@ def load_train_data():
             # trainData.set_value(index, 'item_category', sub_cats[row['Category']])
             trainData.at[index, 'item_category'] = sub_cats[row['Category']]
         try:
-            trainData.to_csv(path_or_buf='../data/train_with_cname.csv', index=False)
+            trainData.to_csv(path_or_buf='../data/' + filename + '_with_cname.csv', index=False)
         except:
             trainData.to_csv(path_or_buf='train_with_cname.csv', index=False)
-    return trainData
 
+    return trainData
