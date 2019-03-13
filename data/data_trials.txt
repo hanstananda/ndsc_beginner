@@ -1,0 +1,23 @@
+- no spec chars, delete irrelevant words (incomplete)
+	0.71444
+- spec chars -> space, delete irrelevant words (incomplete)
+	0.71157
+- no spec chars, delete irrelevant words (incomplete), no 1-letter words
+	0.71363
+- spec chars -> space, delete irrelevant words (incomplete), no 1-letter words
+	0.71294 (epoch 9)
+- no spec chars
+	0.71935
+- original data
+	0.71911
+- spec chars -> space
+	0.71855
+- no spec chars, no numbers
+	0.72154 (epoch 9), 0.7214 (epoch 10)
+	0.71989
+- spec chars -> space, no numbers
+	0.71941
+- no spec chars, delete standalone numbers
+	0.71762 (epoch 9), 0.7173 (epoch 10)
+- no spec chars, no numbers, no 1-letter words
+	0.71965
