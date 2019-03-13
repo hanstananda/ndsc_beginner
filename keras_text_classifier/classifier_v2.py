@@ -39,13 +39,13 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 # Main settings
 plot_history_check = True
 gen_test = True
-max_length = 50  # 32 is max word in train
-max_words = 1000
+max_length = 35  # 32 is max word in train
+max_words = 2500
 num_classes = len(all_subcategories)
 # Training for more epochs will likelval-acc after 10 epochs: 0.71306y lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 50
+epochs = 10
 
 print(all_subcategories)
 print("no of categories: " + str(num_classes))
@@ -79,10 +79,12 @@ print(len(train_texts), len(train_tags))
 
 y = train_tags.values
 
-tokenize = text.Tokenizer(num_words=1000, char_level=False)
+tokenize = text.Tokenizer(num_words=max_words, char_level=False)
 tokenize.fit_on_texts(train_texts)  # only fit on train
 x_train = tokenize.texts_to_sequences(train_texts)
 x_test = tokenize.texts_to_sequences(test_texts)
+
+word_index = tokenize.word_index
 
 # Pad sequences with zeros
 x_train = pad_sequences(x_train, padding='post', maxlen=max_length)
@@ -101,8 +103,8 @@ print(vocab_size)
 # max val-acc after 50 epochs: 0.70442
 
 model = Sequential()
-model.add(Embedding(max_words,
-                    128,
+model.add(Embedding(len(word_index)+1,
+                    300,
                     input_length=max_length,
                     trainable=True))
 model.add(Flatten())
@@ -120,8 +122,8 @@ model.summary()
 # Additional note: The training time is freaking longer than others, more than 3 times model 1!
 
 # model = Sequential()
-# model.add(Embedding(max_words,
-#                     128,
+# model.add(Embedding(len(word_index)+1,
+#                     300,
 #                     input_length=max_length,
 #                     trainable=True))
 # model.add(Bidirectional(LSTM(100)))
@@ -139,8 +141,8 @@ model.summary()
 # val-acc after 50 epochs: 0.71369
 
 # model = Sequential()
-# model.add(Embedding(max_words,
-#                     128,
+# model.add(Embedding(len(word_index)+1,
+#                     300,
 #                     input_length=max_length,
 #                     trainable=True))
 # model.add(Conv1D(128, 5, activation='relu'))
@@ -160,8 +162,8 @@ model.summary()
 # Note: This one very long time to train, max length must also be 1000++
 
 # model = Sequential()
-# model.add(Embedding(max_words,
-#                     128,
+# model.add(Embedding(len(word_index)+1,
+#                     300,
 #                     input_length=max_length,
 #                     trainable=True))
 # model.add(Conv1D(128, 5, activation='relu'))
@@ -180,7 +182,6 @@ model.summary()
 #
 # model.summary()
 
-# model 4
 
 def gen_filename_h5():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
