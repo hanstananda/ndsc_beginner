@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime
 import itertools
 import json
@@ -7,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from keras.callbacks import ModelCheckpoint
 from keras_preprocessing.sequence import pad_sequences
 
 from sklearn.utils import shuffle
@@ -20,7 +22,9 @@ from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
 
-testData = pd.read_csv("../data/test.csv")
+sys.setrecursionlimit(10000)
+
+testData = pd.read_csv("../data/new_test.csv")
 dictData = pd.read_csv("../data/kata_dasar_kbbi.csv")
 categories_file = open("../data/categories.json", "r")
 categories = json.load(categories_file)
@@ -226,23 +230,38 @@ model_mobile = model_gen(num_classes_mobile, word_index_mobile, embedding_matrix
 # You can see the validation loss decreasing slowly when you run this
 # Because val_loss is no longer decreasing we stop training to prevent overfitting
 
+
+def gen_filename_hdf5(name):
+    filepath = "../checkpoints/" + name+'epoch_'+str(epochs) + '_' + \
+               datetime.now().strftime("%m_%d_%Y_%H_%M_%S") + "v2.hdf5"
+    return filepath
+
+
+checkpointer_fashion = ModelCheckpoint(gen_filename_hdf5("fashion"), monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+checkpointer_beauty = ModelCheckpoint(gen_filename_hdf5("beauty"), monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+checkpointer_mobile = ModelCheckpoint(gen_filename_hdf5("mobile"), monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+
+
 history_fashion = model_fashion.fit([x_train_fashion], y_train_fashion,
                                     batch_size=batch_size,
                                     epochs=epochs,
                                     verbose=1,
+                                    callbacks=[checkpointer_fashion],
                                     validation_split=0.1)
 
 history_beauty = model_beauty.fit([x_train_beauty], y_train_beauty,
-                                   batch_size=batch_size,
-                                   epochs=epochs,
-                                   verbose=1,
-                                   validation_split=0.1)
+                                  batch_size=batch_size,
+                                  epochs=epochs,
+                                  verbose=1,
+                                  callbacks=[checkpointer_beauty],
+                                  validation_split=0.1)
 
 history_mobile = model_mobile.fit([x_train_mobile], y_train_mobile,
-                                   batch_size=batch_size,
-                                   epochs=epochs,
-                                   verbose=1,
-                                   validation_split=0.1)
+                                  batch_size=batch_size,
+                                  epochs=epochs,
+                                  verbose=1,
+                                  callbacks=[checkpointer_mobile],
+                                  validation_split=0.1)
 
 
 def gen_filename_h5(history):
