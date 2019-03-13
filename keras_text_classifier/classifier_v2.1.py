@@ -61,13 +61,13 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 plot_history_check = True
 gen_test = False
 max_length = 35  # 32 is max word in train
-max_words = 1000
+max_words = 2500
 EMBEDDING_DIM = 300  # Based on the txt file: glove 300d
 num_classes = len(all_subcategories)
 # Training for more epochs will likelval-acc after 10 epochs: 0.71306y lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 15
+epochs = 10
 
 print(all_subcategories)
 print("no of categories: " + str(num_classes))
@@ -101,7 +101,7 @@ print(len(train_texts), len(train_tags))
 
 
 
-tokenize = text.Tokenizer(num_words=1000, char_level=False)
+tokenize = text.Tokenizer(num_words=max_words, char_level=False)
 tokenize.fit_on_texts(train_texts)  # only fit on train
 x_train = tokenize.texts_to_sequences(train_texts)
 x_test = tokenize.texts_to_sequences(test_texts)
@@ -113,6 +113,8 @@ x_test = pad_sequences(x_test, padding='post', maxlen=max_length)
 y_train = train_tags.values
 y_train = utils.to_categorical(y_train)
 word_index = tokenize.word_index
+
+print(len(word_index))
 
 
 embedding_matrix = np.zeros((len(word_index) + 1, EMBEDDING_DIM))
