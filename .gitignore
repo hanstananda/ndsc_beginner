@@ -116,3 +116,9 @@ tf_cache/
 # Embedding files
 glove.840B.300d.joblib
 glove.840B.300d.txt
+
+# updated data files
+data/new_test.csv
+data/new_train.csv
+data/train_with_cname.csv
+data/new_train_with_cname.csv
