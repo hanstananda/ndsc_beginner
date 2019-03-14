@@ -75,7 +75,7 @@ gen_test = True
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 12
+epochs = 8
 
 print(all_subcategories)
 print("no of categories: " + str(len(all_subcategories)))
