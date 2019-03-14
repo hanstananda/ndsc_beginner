@@ -52,6 +52,7 @@ ptyprocess==0.6.0
 Pygments==2.3.1
 pyparsing==2.3.1
 pyrsistent==0.14.11
+PySastrawi==1.2.0
 python-dateutil==2.8.0
 pytz==2018.9
 pywinpty==0.5.5

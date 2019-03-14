@@ -21,3 +21,9 @@
 	0.71762 (epoch 9), 0.7173 (epoch 10)
 - no spec chars, no numbers, no 1-letter words
 	0.71965
+- no spec chars, number -> space, stem Sastrawi (new classifier)
+    0.72770
+    0.72830
+- spec chars, number -> space, stem Sastrawi
+    0.73076
+    0.73049
