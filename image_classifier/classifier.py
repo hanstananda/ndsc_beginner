@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from utility.train_data_loader import load_train_data
 
 epochs = 10
-batch_size = 64
+batch_size = 256
 specialization = "beauty"
 gen_test = False
 
@@ -34,20 +34,19 @@ test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 feature_extractor_url = "https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/2"
 
 trainData = load_train_data()
-testData = pd.read_csv("../data/new_test.csv")
+testData = pd.read_csv("../data/test.csv")
 
 train_data_specialized = trainData[trainData['image_path'].str.contains(specialization)][::]
-train_data_specialized['image_path'] = train_data_specialized['image_path'].\
-    map(lambda x: x.lstrip(specialization+'_image/'))
+train_data_specialized['image_path'] = train_data_specialized['image_path']. \
+    map(lambda x: x.replace(specialization + '_image/', ''))
 
 validation_data_specialized = trainData[trainData['image_path'].str.contains(specialization)][::10]
-validation_data_specialized['image_path'] = validation_data_specialized['image_path'].\
-    map(lambda x: x.lstrip(specialization+'_image/'))
-
+validation_data_specialized['image_path'] = validation_data_specialized['image_path']. \
+    map(lambda x: x.replace(specialization + '_image/', ''))
 
 test_data_specialized = testData[testData['image_path'].str.contains(specialization)]
 test_data_specialized['image_path'] = test_data_specialized['image_path'].\
-    map(lambda x: x.lstrip(specialization+'_image/'))
+    map(lambda x: x.replace(specialization+'_image/', ''))
 
 inverted_categories_specialized = {k.lower(): v for k, v in categories[specialization.capitalize()].items()}
 # print(train_data_specialized)
