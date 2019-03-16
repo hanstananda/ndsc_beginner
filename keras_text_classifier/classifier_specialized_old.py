@@ -17,7 +17,8 @@ from sklearn.metrics import confusion_matrix
 
 from tensorflow import keras
 from keras.models import Sequential
-from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Bidirectional, CuDNNLSTM
+from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Bidirectional, CuDNNLSTM, \
+    SpatialDropout1D
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -66,7 +67,7 @@ except:
 
 # Main settings
 
-max_words = 2500
+max_words = 3500
 max_length = 35
 EMBEDDING_DIM = 300
 plot_history_check = True
@@ -75,7 +76,7 @@ gen_test = True
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 8
+epochs = 9
 
 print(all_subcategories)
 print("no of categories: " + str(len(all_subcategories)))
@@ -208,15 +209,17 @@ def model_gen(num_classes, word_index, embedding_matrix):
                         input_length=max_length,
                         weights=[embedding_matrix],
                         trainable=True))
+    model.add(SpatialDropout1D(0.2))
     model.add(Bidirectional(CuDNNLSTM(256, return_sequences=True)))
-    model.add(Bidirectional(CuDNNLSTM(256)))
-    model.add(Dense(512, activation='relu'))
+    model.add(Bidirectional(CuDNNLSTM(256, return_sequences=True)))
+    model.add(Conv1D(512, 5, activation='relu'))
+    model.add(GlobalMaxPooling1D())
+    model.add(Dense(256, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(num_classes, activation='softmax'))
     model.compile(optimizer='adam',
                   loss='categorical_crossentropy',
                   metrics=['accuracy'])
-
     model.summary()
     return model
 
