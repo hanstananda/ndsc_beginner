@@ -25,7 +25,7 @@ all_subcategories = {k.lower(): v for k, v in categories['Mobile'].items()}
 all_subcategories.update({k.lower(): v for k, v in categories['Fashion'].items()})
 all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()})
 
-data_root = "../../"+specialization+"_image/"
+data_root = f"../../{specialization}_image/"
 
 datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
 valid_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
@@ -38,15 +38,15 @@ testData = pd.read_csv("../data/test.csv")
 
 train_data_specialized = trainData[trainData['image_path'].str.contains(specialization)][::]
 train_data_specialized['image_path'] = train_data_specialized['image_path']. \
-    map(lambda x: x.replace(specialization + '_image/', ''))
+    map(lambda x: x.replace(f"{specialization}_image/", ''))
 
 validation_data_specialized = trainData[trainData['image_path'].str.contains(specialization)][::10]
 validation_data_specialized['image_path'] = validation_data_specialized['image_path']. \
-    map(lambda x: x.replace(specialization + '_image/', ''))
+    map(lambda x: x.replace(f"{specialization}_image/", ''))
 
 test_data_specialized = testData[testData['image_path'].str.contains(specialization)]
 test_data_specialized['image_path'] = test_data_specialized['image_path'].\
-    map(lambda x: x.replace(specialization+'_image/', ''))
+    map(lambda x: x.replace(f"{specialization}_image/", ''))
 
 inverted_categories_specialized = {k.lower(): v for k, v in categories[specialization.capitalize()].items()}
 # print(train_data_specialized)
@@ -118,7 +118,7 @@ def gen_filename_csv():
 
 
 # Checkpoint auto
-filepath = "../checkpoints/"+gen_filename_h5()+"v2.hdf5"
+filepath = f"../checkpoints/{gen_filename_h5()}v2.hdf5"
 checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
 
@@ -135,7 +135,7 @@ history = model.fit_generator(generator=image_generator,
                               )
 
 
-model.save('model_beauty_image' + gen_filename_h5() + '.h5')
+model.save(f"model_{specialization}_image{gen_filename_h5()}.h5")
 
 
 def plot_history(history):
