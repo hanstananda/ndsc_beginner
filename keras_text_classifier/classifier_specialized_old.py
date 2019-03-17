@@ -18,7 +18,7 @@ from sklearn.metrics import confusion_matrix
 from tensorflow import keras
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Bidirectional, CuDNNLSTM, \
-    SpatialDropout1D
+    SpatialDropout1D, MaxPooling1D
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -212,6 +212,8 @@ def model_gen(num_classes, word_index, embedding_matrix):
     model.add(SpatialDropout1D(0.2))
     model.add(Bidirectional(CuDNNLSTM(256, return_sequences=True)))
     model.add(Bidirectional(CuDNNLSTM(256, return_sequences=True)))
+    model.add(Conv1D(512, 5, activation='relu'))
+    model.add(MaxPooling1D(pool_size=4))
     model.add(Conv1D(512, 5, activation='relu'))
     model.add(GlobalMaxPooling1D())
     model.add(Dense(256, activation='relu'))
