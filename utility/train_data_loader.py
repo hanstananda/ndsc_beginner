@@ -30,6 +30,9 @@ def load_train_data():
             cat = category_mapping[img_path.split('/')[0]]
             if cat == 'Fashion':
                 sub_cats = inverted_categories_fashion
+                if ".jpg" not in row["image_path"]:  # fix typos
+                    fixed = row["image_path"] + ".jpg"
+                trainData.at[index, "image_path"] = fixed
             elif cat == 'Mobile':
                 sub_cats = inverted_categories_mobile
             elif cat == 'Beauty':
