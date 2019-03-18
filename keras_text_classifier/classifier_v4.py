@@ -13,6 +13,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.utils import shuffle
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder
 from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score
 
 from tensorflow import keras
 from keras.models import Sequential
@@ -21,7 +22,7 @@ from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMa
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
-import xgboost
+import xgboost as xgb
 
 
 from utility.train_data_loader import load_train_data
@@ -102,5 +103,93 @@ y_valid = valid_tags.values
 vocab_size = len(tokenize.word_index) + 1
 print(vocab_size)
 
-accuracy = xgboost.XGBClassifier(verbosity=3).fit(x_train,y_train,x_valid)
-print(accuracy)
+dtrain = xgb.DMatrix(x_train,label = y_train)
+dvalid = xgb.DMatrix(x_valid,label = y_valid)
+
+# setup parameters for xgboost
+param = {}
+# use softmax multi-class classification
+param['objective'] = 'multi:softmax'
+# scale weight of positive examples
+param['eta'] = 0.1
+param['max_depth'] = 7
+param['num_class'] = 58
+param['verbosity'] = 3
+param['tree-method'] = 'gpu-hist'
+param['updater'] = 'grow_gpu'
+
+watchlist = [(dtrain, 'train'), (dvalid, 'test')]
+num_round = 3000
+bst = xgb.train(param, dtrain, num_round, watchlist,early_stopping_rounds = 50)
+pred = bst.predict(dvalid)
+error_rate = np.sum(pred != y_valid) / y_valid.shape[0]
+print('Test error using softmax = {}'.format(error_rate))
+print('Accuracy using softmax = {}'.format(accuracy_score(y_valid,pred)))
+bst.save_model('xgboost' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S"))
+
+# from sklearn import model_selection, preprocessing, linear_model, naive_bayes, metrics, svm
+# from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+# from sklearn import decomposition, ensemble
+#
+# import pandas, xgboost, numpy, string
+# from keras.preprocessing import text, sequence
+# from keras import layers, models, optimizers
+#
+#
+# def train_model(classifier, feature_vector_train, label, feature_vector_valid, is_neural_net=False):
+#     # fit the training dataset on the classifier
+#     classifier.fit(feature_vector_train, label)
+#
+#     # predict the labels on validation dataset
+#     predictions = classifier.predict(feature_vector_valid)
+#
+#     if is_neural_net:
+#         predictions = predictions.argmax(axis=-1)
+#
+#     return metrics.accuracy_score(predictions, valid_y)
+#
+# # split the dataset into training and validation datasets
+# train_x, valid_x, train_y, valid_y = model_selection.train_test_split(trainData['title'], trainData['Category'])
+#
+# # label encode the target variable
+# encoder = preprocessing.LabelEncoder()
+# train_y = encoder.fit_transform(train_y)
+# valid_y = encoder.fit_transform(valid_y)
+#
+# # create a count vectorizer object
+# count_vect = CountVectorizer(analyzer='word', token_pattern=r'\w{1,}')
+# count_vect.fit(trainData['title'])
+# print("")
+# # transform the training and validation data using count vectorizer object
+# xtrain_count =  count_vect.transform(train_x)
+# xvalid_count =  count_vect.transform(valid_x)
+#
+# # word level tf-idf
+# tfidf_vect = TfidfVectorizer(analyzer='word', token_pattern=r'\w{1,}', max_features=5000)
+# tfidf_vect.fit(trainData['title'])
+# xtrain_tfidf =  tfidf_vect.transform(train_x)
+# xvalid_tfidf =  tfidf_vect.transform(valid_x)
+#
+# # ngram level tf-idf
+# tfidf_vect_ngram = TfidfVectorizer(analyzer='word', token_pattern=r'\w{1,}', ngram_range=(2,3), max_features=5000)
+# tfidf_vect_ngram.fit(trainData['title'])
+# xtrain_tfidf_ngram =  tfidf_vect_ngram.transform(train_x)
+# xvalid_tfidf_ngram =  tfidf_vect_ngram.transform(valid_x)
+#
+# # characters level tf-idf
+# tfidf_vect_ngram_chars = TfidfVectorizer(analyzer='char', token_pattern=r'\w{1,}', ngram_range=(2,3), max_features=5000)
+# tfidf_vect_ngram_chars.fit(trainData['title'])
+# xtrain_tfidf_ngram_chars =  tfidf_vect_ngram_chars.transform(train_x)
+# xvalid_tfidf_ngram_chars =  tfidf_vect_ngram_chars.transform(valid_x)
+#
+# # Extereme Gradient Boosting on Count Vectors
+# accuracy = train_model(xgboost.XGBClassifier(), xtrain_count.tocsc(), train_y, xvalid_count.tocsc())
+# print ("Xgb, Count Vectors: ", accuracy)
+#
+# # Extereme Gradient Boosting on Word Level TF IDF Vectors
+# accuracy = train_model(xgboost.XGBClassifier(), xtrain_tfidf.tocsc(), train_y, xvalid_tfidf.tocsc())
+# print ("Xgb, WordLevel TF-IDF: ", accuracy)
+#
+# # Extereme Gradient Boosting on Character Level TF IDF Vectors
+# accuracy = train_model(xgboost.XGBClassifier(), xtrain_tfidf_ngram_chars.tocsc(), train_y, xvalid_tfidf_ngram_chars.tocsc())
+# print ("Xgb, CharLevel Vectors: ", accuracy)
