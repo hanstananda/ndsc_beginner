@@ -8,7 +8,8 @@ import pandas as pd
 import tensorflow_hub as hub
 from keras import Sequential
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Lambda, Dense
+from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Bidirectional, CuDNNLSTM, \
+    SpatialDropout1D, MaxPooling1D, Conv2D, MaxPooling2D, Flatten, Lambda
 import matplotlib.pyplot as plt
 
 from utility.train_data_loader import load_train_data
