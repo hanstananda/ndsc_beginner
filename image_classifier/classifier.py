@@ -8,8 +8,7 @@ import pandas as pd
 import tensorflow_hub as hub
 from keras import Sequential
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Bidirectional, CuDNNLSTM, \
-    SpatialDropout1D, MaxPooling1D, Conv2D, MaxPooling2D, Flatten, Lambda
+from keras.layers import Dense, Dropout, Conv2D, MaxPooling2D, Flatten
 import matplotlib.pyplot as plt
 
 from utility.train_data_loader import load_train_data
@@ -28,29 +27,60 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 
 data_root = f"../../{specialization}_image/"
 
-datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
-valid_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
-test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1./255)
+datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
+valid_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
+test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
 
 feature_extractor_url = "https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/2"
 
 trainData = load_train_data()
 testData = pd.read_csv("../data/test.csv")
 
-train_data_specialized = trainData[trainData['image_path'].str.contains(specialization)][::]
-train_data_specialized['image_path'] = train_data_specialized['image_path']. \
-    map(lambda x: x.replace(f"{specialization}_image/", ''))
-
-validation_data_specialized = trainData[trainData['image_path'].str.contains(specialization)][::10]
-validation_data_specialized['image_path'] = validation_data_specialized['image_path']. \
-    map(lambda x: x.replace(f"{specialization}_image/", ''))
+# train_data_specialized = trainData[trainData['image_path'].str.contains(specialization)][::]
+# train_data_specialized['image_path'] = train_data_specialized['image_path']. \
+#     map(lambda x: x.replace(f"{specialization}_image/", ''))
+#
+# validation_data_specialized = trainData[trainData['image_path'].str.contains(specialization)][::10]
+# validation_data_specialized['image_path'] = validation_data_specialized['image_path']. \
+#     map(lambda x: x.replace(f"{specialization}_image/", ''))
+#
 
 test_data_specialized = testData[testData['image_path'].str.contains(specialization)]
-test_data_specialized['image_path'] = test_data_specialized['image_path'].\
+test_data_specialized['image_path'] = test_data_specialized['image_path']. \
     map(lambda x: x.replace(f"{specialization}_image/", ''))
 
 inverted_categories_specialized = {k.lower(): v for k, v in categories[specialization.capitalize()].items()}
-# print(train_data_specialized)
+
+train_data_specialized = trainData[trainData['image_path'].str.contains(specialization)][::]
+df_train = pd.DataFrame()
+df_valid = pd.DataFrame()
+num_train = 2000
+num_valid = int(0.1 * num_train)
+for k, v in inverted_categories_specialized.items():
+    rows = train_data_specialized.loc[train_data_specialized['Category'] == v]
+    num_images = rows.shape[0]
+    if num_train + num_valid > num_images:
+        nt = int(0.9 * num_images)
+        nv = int(0.1 * num_images)
+    else:
+        nt = num_train
+        nv = num_valid
+    # print(nt,nv)
+    rows_train = rows[:nt]
+    df_train = df_train.append(rows_train)
+    rows_valid = rows[nt:(nt + num_valid)]
+    df_valid = df_valid.append(rows_valid)
+
+train_data_specialized = df_train
+validation_data_specialized = df_valid
+
+train_data_specialized['image_path'] = train_data_specialized['image_path']. \
+    map(lambda x: x.replace(specialization + '_image/', ''))
+
+validation_data_specialized['image_path'] = validation_data_specialized['image_path']. \
+    map(lambda x: x.replace(specialization + '_image/', ''))
+
+
 IMAGE_SIZE = hub.get_expected_image_size(hub.Module(feature_extractor_url))
 image_generator = datagen.flow_from_dataframe(train_data_specialized,
                                               directory=os.path.join(data_root),
@@ -74,7 +104,6 @@ valid_generator = valid_datagen.flow_from_dataframe(validation_data_specialized,
                                                     batch_size=64,
                                                     )
 
-
 test_generator = test_datagen.flow_from_dataframe(test_data_specialized,
                                                   directory=os.path.join(data_root),
                                                   x_col="image_path",
@@ -86,7 +115,7 @@ test_generator = test_datagen.flow_from_dataframe(test_data_specialized,
                                                   batch_size=64,
                                                   )
 
-label_names = sorted(image_generator.class_indices.items(), key=lambda pair:pair[1])
+label_names = sorted(image_generator.class_indices.items(), key=lambda pair: pair[1])
 label_names = np.array([key.title() for key, value in label_names])
 
 
@@ -100,9 +129,15 @@ for image_batch, label_batch in image_generator:
     print("Label batch shape: ", label_batch.shape)
     break
 
+input_shape = IMAGE_SIZE+[3]
 
 model = Sequential()
-model.add(Lambda(feature_extractor, input_shape=IMAGE_SIZE+[3], trainable=True))
+model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape))
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.2))
+model.add(Flatten())
+model.add(Dense(128, activation='relu'))
+model.add(Dropout(0.5))
 model.add(Dense(len(inverted_categories_specialized), activation='softmax'))
 model.compile(optimizer='adam',
               loss='categorical_crossentropy',
@@ -111,19 +146,18 @@ model.summary()
 
 
 def gen_filename_h5():
-    return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+    return 'epoch_' + str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
 
 def gen_filename_csv():
-    return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
+    return 'epoch_' + str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
 
 
 # Checkpoint auto
 filepath = f"../checkpoints/{gen_filename_h5()}v2.hdf5"
 checkpointer = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
 
-
-steps_per_epoch = image_generator.samples//image_generator.batch_size
+steps_per_epoch = image_generator.samples // image_generator.batch_size
 valid_steps_per_epoch = valid_generator.samples // valid_generator.batch_size
 test_steps_per_epoch = test_generator.samples // test_generator.batch_size
 
@@ -134,7 +168,6 @@ history = model.fit_generator(generator=image_generator,
                               epochs=epochs,
                               callbacks=[checkpointer],
                               )
-
 
 model.save(f"model_{specialization}_image{gen_filename_h5()}.h5")
 
@@ -169,6 +202,7 @@ def perform_test():
     predicted_label_specialized = [np.argmax(prediction_specialized[i]) for i in range(len(prediction_specialized))]
     df = pd.DataFrame({'itemid': test_data_specialized['itemid'].astype(int), 'Category': predicted_label_specialized})
     df.to_csv(path_or_buf='res' + gen_filename_csv() + '.csv', index=False)
+
 
 if gen_test:
     perform_test()
