@@ -17,7 +17,7 @@ from sklearn.metrics import confusion_matrix
 from tensorflow import keras
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM, \
-    Bidirectional, MaxPooling1D
+    Bidirectional, MaxPooling1D, TimeDistributed, SpatialDropout1D, CuDNNLSTM
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -102,19 +102,19 @@ print(vocab_size)
 # max val-acc after 10 epochs: 0.70347
 # max val-acc after 50 epochs: 0.70442
 
-model = Sequential()
-model.add(Embedding(len(word_index)+1,
-                    300,
-                    input_length=max_length,
-                    trainable=True))
-model.add(Flatten())
-model.add(Dense(512, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(num_classes, activation='softmax'))
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
-model.summary()
+# model = Sequential()
+# model.add(Embedding(len(word_index)+1,
+#                     300,
+#                     input_length=max_length,
+#                     trainable=True))
+# model.add(Flatten())
+# model.add(Dense(512, activation='relu'))
+# model.add(Dropout(0.5))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+# model.summary()
 
 # model 2 : Embedding with LSTM RNN
 # max val-acc after 10 epochs: 0.71602
@@ -181,6 +181,74 @@ model.summary()
 #               metrics=['accuracy'])
 #
 # model.summary()
+
+
+# model 4
+# Note: Max val after 10 epochs: Not tested, but clearly better than CUDNNLSTM normal XD
+
+# model = Sequential()
+# model.add(Embedding(len(word_index)+1,
+#                     300,
+#                     input_length=max_length,
+#                     trainable=True))
+# model.add(SpatialDropout1D(0.2))
+# model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
+# model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
+# model.add(Conv1D(256, 5, activation='relu'))
+# model.add(GlobalMaxPooling1D())
+# model.add(Dense(256, activation='relu'))
+# model.add(Dropout(0.5))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+# model.summary()
+
+# model 4.1
+# Note: Max val after 10 epochs: 0.734 (may still slightly increase xD)
+
+# model = Sequential()
+# model.add(Embedding(len(word_index)+1,
+#                     300,
+#                     input_length=max_length,
+#                     trainable=True))
+# model.add(Dropout(0.25))
+# model.add(Conv1D(256, 5, activation='relu', padding='valid', strides=1))
+# model.add(MaxPooling1D(pool_size=4))
+# model.add(CuDNNLSTM(256))
+# model.add(Dense(256, activation='relu'))
+# model.add(Dropout(0.5))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+# model.summary()
+
+
+# model 4.2
+# 0.724 in 6 epochs, a bit worse than model 4
+
+model = Sequential()
+model.add(Embedding(len(word_index)+1,
+                    300,
+                    input_length=max_length,
+                    trainable=True))
+model.add(Dropout(0.25))
+model.add(TimeDistributed(Conv1D(256, 5, activation='relu', padding='same', strides=1)))
+model.add(TimeDistributed(MaxPooling1D(pool_size=4)))
+model.add(TimeDistributed(Conv1D(256, 5, activation='relu', padding='same', strides=1)))
+model.add(TimeDistributed(MaxPooling1D(pool_size=2)))
+model.add(SpatialDropout1D(0.2))
+model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
+model.add(Bidirectional(CuDNNLSTM(128, return_sequences=False)))
+model.add(Dense(256, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(num_classes, activation='softmax'))
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+model.summary()
+
 
 
 def gen_filename_h5():

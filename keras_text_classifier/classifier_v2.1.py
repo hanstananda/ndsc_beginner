@@ -12,7 +12,7 @@ from sklearn.utils import shuffle
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Flatten, LSTM, \
-    Bidirectional, CuDNNLSTM, MaxPooling1D, ConvLSTM2D, CuDNNGRU
+    Bidirectional, CuDNNLSTM, MaxPooling1D, ConvLSTM2D, CuDNNGRU, SpatialDropout1D
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -230,6 +230,27 @@ model.summary()
 #
 # model.summary()
 
+# model 4
+# val-acc after 10 epochs: 0.73909 (on epoch 9)
+
+model = Sequential()
+model.add(Embedding(len(word_index)+1,
+                    300,
+                    input_length=max_length,
+                    weights=[embedding_matrix],
+                    trainable=True))
+model.add(SpatialDropout1D(0.2))
+model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
+model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
+model.add(Conv1D(256, 5, activation='relu'))
+model.add(GlobalMaxPooling1D())
+model.add(Dense(256, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(num_classes, activation='softmax'))
+model.compile(optimizer='adam',
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
+model.summary()
 
 def gen_filename_h5():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
