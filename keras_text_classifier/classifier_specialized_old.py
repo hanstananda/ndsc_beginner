@@ -18,7 +18,7 @@ from sklearn.metrics import confusion_matrix
 from tensorflow import keras
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Dropout, Embedding, Conv1D, GlobalMaxPooling1D, Bidirectional, CuDNNLSTM, \
-    SpatialDropout1D, MaxPooling1D
+    SpatialDropout1D, MaxPooling1D, Flatten, BatchNormalization
 from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
@@ -67,7 +67,7 @@ except:
 
 # Main settings
 
-max_words = 3500
+max_words = 2500
 max_length = 35
 EMBEDDING_DIM = 300
 plot_history_check = True
@@ -210,12 +210,15 @@ def model_gen(num_classes, word_index, embedding_matrix):
                         weights=[embedding_matrix],
                         trainable=True))
     model.add(SpatialDropout1D(0.2))
-    model.add(Bidirectional(CuDNNLSTM(256, return_sequences=True)))
-    model.add(Bidirectional(CuDNNLSTM(256, return_sequences=True)))
+    model.add(Bidirectional(CuDNNLSTM(512, return_sequences=True)))
+    model.add(Bidirectional(CuDNNLSTM(512, return_sequences=True)))
     model.add(Conv1D(512, 5, activation='relu'))
     model.add(MaxPooling1D(pool_size=4))
-    model.add(Conv1D(512, 5, activation='relu'))
-    model.add(GlobalMaxPooling1D())
+    model.add(BatchNormalization())
+    model.add(Conv1D(256, 5, activation='relu'))
+    model.add(MaxPooling1D(pool_size=2))
+    model.add(Flatten())
+    model.add(Dropout(0.25))
     model.add(Dense(256, activation='relu'))
     model.add(Dropout(0.5))
     model.add(Dense(num_classes, activation='softmax'))
@@ -251,21 +254,18 @@ history_fashion = model_fashion.fit([x_train_fashion], y_train_fashion,
                                     batch_size=batch_size,
                                     epochs=epochs,
                                     verbose=1,
-                                    callbacks=[checkpointer_fashion],
                                     validation_split=0.1)
 
 history_beauty = model_beauty.fit([x_train_beauty], y_train_beauty,
                                   batch_size=batch_size,
                                   epochs=epochs,
                                   verbose=1,
-                                  callbacks=[checkpointer_beauty],
                                   validation_split=0.1)
 
 history_mobile = model_mobile.fit([x_train_mobile], y_train_mobile,
                                   batch_size=batch_size,
                                   epochs=epochs,
                                   verbose=1,
-                                  callbacks=[checkpointer_mobile],
                                   validation_split=0.1)
 
 
