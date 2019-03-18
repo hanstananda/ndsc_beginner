@@ -45,7 +45,7 @@ num_classes = len(all_subcategories)
 # Training for more epochs will likelval-acc after 10 epochs: 0.71306y lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 10
+epochs = 9
 
 print(all_subcategories)
 print("no of categories: " + str(num_classes))
@@ -228,19 +228,40 @@ print(vocab_size)
 # model 4.2
 # 0.724 in 6 epochs, a bit worse than model 4
 
+# model = Sequential()
+# model.add(Embedding(len(word_index)+1,
+#                     300,
+#                     input_length=max_length,
+#                     trainable=True))
+# model.add(Dropout(0.25))
+# model.add(TimeDistributed(Conv1D(256, 5, activation='relu', padding='same', strides=1)))
+# model.add(TimeDistributed(MaxPooling1D(pool_size=4)))
+# model.add(TimeDistributed(Conv1D(256, 5, activation='relu', padding='same', strides=1)))
+# model.add(TimeDistributed(MaxPooling1D(pool_size=2)))
+# model.add(SpatialDropout1D(0.2))
+# model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
+# model.add(Bidirectional(CuDNNLSTM(128, return_sequences=False)))
+# model.add(Dense(256, activation='relu'))
+# model.add(Dropout(0.5))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+# model.summary()
+
+# model 4.3
 model = Sequential()
-model.add(Embedding(len(word_index)+1,
+model.add(Embedding(len(word_index) + 1,
                     300,
                     input_length=max_length,
                     trainable=True))
-model.add(Dropout(0.25))
-model.add(TimeDistributed(Conv1D(256, 5, activation='relu', padding='same', strides=1)))
-model.add(TimeDistributed(MaxPooling1D(pool_size=4)))
-model.add(TimeDistributed(Conv1D(256, 5, activation='relu', padding='same', strides=1)))
-model.add(TimeDistributed(MaxPooling1D(pool_size=2)))
 model.add(SpatialDropout1D(0.2))
-model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
-model.add(Bidirectional(CuDNNLSTM(128, return_sequences=False)))
+model.add(Bidirectional(CuDNNLSTM(256, return_sequences=True)))
+model.add(Bidirectional(CuDNNLSTM(256, return_sequences=True)))
+model.add(Conv1D(512, 5, activation='relu'))
+model.add(MaxPooling1D(pool_size=4))
+model.add(Conv1D(512, 5, activation='relu'))
+model.add(GlobalMaxPooling1D())
 model.add(Dense(256, activation='relu'))
 model.add(Dropout(0.5))
 model.add(Dense(num_classes, activation='softmax'))
@@ -248,8 +269,6 @@ model.compile(optimizer='adam',
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 model.summary()
-
-
 
 def gen_filename_h5():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")
