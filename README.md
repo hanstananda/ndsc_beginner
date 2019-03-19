@@ -56,6 +56,12 @@
   </thead>
   <tbody id="submission">
     <tr>
+      <td>resepoch_9_2500_03_19_2019_23_13_07.csv</td>
+      <td>Change Glove to FastText Embedding</td>
+      <td>0.75421</td>
+      <td></td>
+    </tr>
+    <tr>
       <td>submission.csv</td>
       <td>Add 1 flatten layer, 512D</td>
       <td>0.75873</td>
