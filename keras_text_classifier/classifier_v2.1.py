@@ -36,6 +36,7 @@ def update_embeddings_index():
 
 
 embedding_filename = "glove.840B.300d"
+# embedding_filename = "custom_glove_300d"
 # embedding_filename = "cc.en.300"
 
 try:
@@ -136,6 +137,8 @@ for word, i in word_index.items():
 # max val-acc after 10 epochs(cc.en.300): 0.724
 # max val-acc after 10 epochs(cc.id.300): 0.72947
 # max val-acc after 10 epochs(cc.en.300 + cc.id.300) : 0.730
+# max val-acc after 10 epochs(custom_glove from wrod2vec): 0.7278
+# max val-acc after 10 epochs(glove) : 0.73015
 
 model = Sequential()
 model.add(Embedding(len(word_index) + 1,
