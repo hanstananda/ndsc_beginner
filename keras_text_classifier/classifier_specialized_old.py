@@ -2,7 +2,7 @@ import sys
 from datetime import datetime
 import itertools
 import json
-
+import subprocess
 import joblib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,6 +72,7 @@ max_length = 35
 EMBEDDING_DIM = 300
 plot_history_check = True
 gen_test = True
+submit = False
 
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
@@ -214,12 +215,12 @@ def model_gen(num_classes, word_index, embedding_matrix):
     model.add(Bidirectional(CuDNNLSTM(512, return_sequences=True)))
     model.add(Conv1D(512, 5, activation='relu'))
     model.add(MaxPooling1D(pool_size=4))
-    model.add(BatchNormalization())
     model.add(Conv1D(256, 5, activation='relu'))
-    model.add(MaxPooling1D(pool_size=2))
-    model.add(Flatten())
+    # model.add(MaxPooling1D(pool_size=2))
     model.add(Dropout(0.25))
+    model.add(Flatten())
     model.add(Dense(256, activation='relu'))
+    # model.add(BatchNormalization())
     model.add(Dropout(0.5))
     model.add(Dense(num_classes, activation='softmax'))
     model.compile(optimizer='adam',
@@ -311,7 +312,7 @@ model_beauty.save('model_beauty_' + gen_filename_h5(history_beauty) + '.h5')
 model_mobile.save('model_mobile_' + gen_filename_h5(history_mobile) + '.h5')
 
 
-def perform_test():
+def perform_test(filename):
     prediction_fashion = model_fashion.predict(x_test_fashion, batch_size=batch_size, verbose=1)
     prediction_beauty = model_beauty.predict(x_test_beauty, batch_size=batch_size, verbose=1)
     prediction_mobile = model_mobile.predict(x_test_mobile, batch_size=batch_size, verbose=1)
@@ -337,11 +338,23 @@ def perform_test():
     #     results.append(label_id)
     #
     # df = pd.DataFrame({'itemid': indexes, 'Category': results})
-    df.to_csv(path_or_buf='res' + gen_filename_csv() + '.csv', index=False)
+    df.to_csv(path_or_buf=filename, index=False)
 
 
 if gen_test:
-    perform_test()
+    filename = "res"+gen_filename_csv()+".csv"
+    perform_test(filename)
+
+
+def submitter(filename):
+    bashCommand = "kaggle competitions submit -c ndsc-beginner -f "+filename+" -m \"test\" "
+    process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
+    output, error = process.communicate()
+    print(output)
+
+
+if submit:
+    submitter(filename)
 
 
 # This utility function is from the sklearn docs:
