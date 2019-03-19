@@ -129,7 +129,7 @@ for image_batch, label_batch in image_generator:
     print("Label batch shape: ", label_batch.shape)
     break
 
-input_shape = IMAGE_SIZE+[3]
+input_shape = IMAGE_SIZE+[1]
 
 model = Sequential()
 model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=input_shape))
