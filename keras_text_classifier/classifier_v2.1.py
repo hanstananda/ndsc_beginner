@@ -22,9 +22,10 @@ testData = pd.read_csv("../data/new_test.csv")
 dictData = pd.read_csv("../data/kata_dasar_kbbi.csv")
 categories_file = open("../data/categories.json", "r")
 
+embeddings_index = {}
+
 
 def update_embeddings_index():
-    embeddings_index = {}
     for line in glove_file:
         values = line.split()
         word = ''.join(values[:-300])
@@ -34,16 +35,19 @@ def update_embeddings_index():
     return embeddings_index
 
 
+embedding_filename = "glove.840B.300d"
+# embedding_filename = "cc.en.300"
+
 try:
-    print("using glove data from joblib...")
-    embeddings_index = joblib.load("../data/glove.840B.300d.joblib")
+    print("trying to use glove data from joblib...")
+    embeddings_index = joblib.load("../data/"+embedding_filename+".joblib")
     print("glove data loaded from joblib!")
 except:
     print("using glove data from txt...")
-    glove_file = open('../data/glove.840B.300d.txt', "r", encoding="Latin-1")
-    embeddings_index = update_embeddings_index()
+    glove_file = open('../data/'+embedding_filename+'.txt', "r", encoding="Latin-1")
+    update_embeddings_index()
     print("glove data loaded from txt!")
-    joblib.dump(embeddings_index, "../data/glove.840B.300d.joblib")
+    joblib.dump(embeddings_index, "../data/"+embedding_filename+".joblib")
     print("glove data saved to joblib!")
 
 
@@ -129,6 +133,9 @@ for word, i in word_index.items():
 
 # model 1 : Embedding with normal Dense NN Softmax
 # max val-acc after 10 epochs: 0.71885
+# max val-acc after 10 epochs(cc.en.300): 0.724
+# max val-acc after 10 epochs(cc.id.300): 0.72947
+# max val-acc after 10 epochs(cc.en.300 + cc.id.300) : 0.730
 
 model = Sequential()
 model.add(Embedding(len(word_index) + 1,
@@ -233,24 +240,24 @@ model.summary()
 # model 4
 # val-acc after 10 epochs: 0.73909 (on epoch 9)
 
-model = Sequential()
-model.add(Embedding(len(word_index)+1,
-                    300,
-                    input_length=max_length,
-                    weights=[embedding_matrix],
-                    trainable=True))
-model.add(SpatialDropout1D(0.2))
-model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
-model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
-model.add(Conv1D(256, 5, activation='relu'))
-model.add(GlobalMaxPooling1D())
-model.add(Dense(256, activation='relu'))
-model.add(Dropout(0.5))
-model.add(Dense(num_classes, activation='softmax'))
-model.compile(optimizer='adam',
-              loss='categorical_crossentropy',
-              metrics=['accuracy'])
-model.summary()
+# model = Sequential()
+# model.add(Embedding(len(word_index)+1,
+#                     300,
+#                     input_length=max_length,
+#                     weights=[embedding_matrix],
+#                     trainable=True))
+# model.add(SpatialDropout1D(0.2))
+# model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
+# model.add(Bidirectional(CuDNNLSTM(128, return_sequences=True)))
+# model.add(Conv1D(256, 5, activation='relu'))
+# model.add(GlobalMaxPooling1D())
+# model.add(Dense(256, activation='relu'))
+# model.add(Dropout(0.5))
+# model.add(Dense(num_classes, activation='softmax'))
+# model.compile(optimizer='adam',
+#               loss='categorical_crossentropy',
+#               metrics=['accuracy'])
+# model.summary()
 
 def gen_filename_h5():
     return 'epoch_'+str(epochs) + '_' + datetime.now().strftime("%m_%d_%Y_%H_%M_%S")

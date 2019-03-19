@@ -15,5 +15,6 @@ https://realpython.com/python-keras-text-classification/ --> Advanced trials, do
 https://medium.com/jatana/report-on-text-classification-using-cnn-rnn-han-f0e887214d5f --> done on classifier_v2.1.py
 https://blog.keras.io/using-pre-trained-word-embeddings-in-a-keras-model.html --> done on classifier_v2.1.py
 https://medium.com/huggingface/universal-word-sentence-embeddings-ce48ddc8fc3a --> Elmo Embeddings, classifier_v2.2.py
+https://github.com/strongio/keras-elmo/blob/master/Elmo%20Keras.ipynb --> Elmo Embeddings, classifier_v2.2.py
 http://jalammar.github.io/illustrated-bert/
 https://medium.com/huggingface/multi-label-text-classification-using-bert-the-mighty-transformer-69714fa3fb3d
