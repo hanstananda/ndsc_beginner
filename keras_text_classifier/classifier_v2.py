@@ -24,7 +24,7 @@ import pandas as pd
 
 from utility.train_data_loader import load_train_data
 
-testData = pd.read_csv("../data/test.csv")
+testData = pd.read_csv("../data/new_test.csv")
 dictData = pd.read_csv("../data/kata_dasar_kbbi.csv")
 categories_file = open("../data/categories.json", "r")
 categories = json.load(categories_file)
@@ -256,13 +256,13 @@ model.add(Embedding(len(word_index) + 1,
                     input_length=max_length,
                     trainable=True))
 model.add(SpatialDropout1D(0.2))
-model.add(Bidirectional(CuDNNLSTM(256, return_sequences=True)))
-model.add(Bidirectional(CuDNNLSTM(256, return_sequences=True)))
-model.add(Conv1D(512, 5, activation='relu'))
+model.add(Bidirectional(CuDNNLSTM(512, return_sequences=True)))
+model.add(Bidirectional(CuDNNLSTM(512, return_sequences=True)))
+model.add(Conv1D(256, 5, activation='relu'))
 model.add(MaxPooling1D(pool_size=4))
-model.add(Conv1D(512, 5, activation='relu'))
+model.add(Conv1D(256, 5, activation='relu'))
 model.add(GlobalMaxPooling1D())
-model.add(Dense(256, activation='relu'))
+model.add(Dense(128, activation='relu'))
 model.add(Dropout(0.5))
 model.add(Dense(num_classes, activation='softmax'))
 model.compile(optimizer='adam',

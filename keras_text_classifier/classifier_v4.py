@@ -111,16 +111,19 @@ param = {}
 # use softmax multi-class classification
 param['objective'] = 'multi:softmax'
 # scale weight of positive examples
-param['eta'] = 0.1
-param['max_depth'] = 7
+param['eta'] = 0.2
+param['max_depth'] = 6
 param['num_class'] = 58
 param['verbosity'] = 3
 param['tree-method'] = 'gpu-hist'
 param['updater'] = 'grow_gpu'
 
 watchlist = [(dtrain, 'train'), (dvalid, 'test')]
-num_round = 3000
-bst = xgb.train(param, dtrain, num_round, watchlist,early_stopping_rounds = 50)
+num_round = 5000
+# bst = xgb.train(param, dtrain, num_round, watchlist,early_stopping_rounds = 50)
+res = xgb.cv(param, dtrain, num_round, nfold=3, metrics={'merror'}, callbacks=[xgb.callback.print_evaluation(show_stdv=True)])
+
+
 pred = bst.predict(dvalid)
 error_rate = np.sum(pred != y_valid) / y_valid.shape[0]
 print('Test error using softmax = {}'.format(error_rate))
