@@ -115,8 +115,9 @@ venv.bak/
 tf_cache/
 
 # Embedding files
-glove.840B.300d.joblib
+*.joblib
 glove.840B.300d.txt
+*.vec
 
 # updated data files
 data/new_test.csv

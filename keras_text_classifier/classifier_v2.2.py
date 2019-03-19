@@ -107,7 +107,7 @@ class ElmoEmbeddingLayer(Layer):
     def compute_output_shape(self, input_shape):
         return (input_shape[0], self.dimensions)
 
-
+# Val-acc after 10 epochs: 0.7068
 model = Sequential()
 model.add(ElmoEmbeddingLayer(input_shape=(1,), input_dtype="string"))
 model.add(Dense(512, activation='relu'))
