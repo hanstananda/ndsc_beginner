@@ -41,6 +41,156 @@
 
 ## Text Classifier
 
+> Scores are general for all categories
+
+<table>
+  <thead>
+    <tr>
+      <th>Model</th>
+      <th>Description</th>
+      <th>Score</th>
+    </tr>
+  </thead>
+  <tbody id="text-classifier">
+    <tr>
+      <td>
+        <ol>
+          <li>Embedding(len(word_index) + 1,300, input_length=max_length, weights=[embedding_matrix], trainable=True)
+          </li>
+          <li>Flatten()</li>
+          <li>Dense(512, activation="relu")</li>
+          <li>Dropout(0.5)</li>
+          <li>Dense(num_classes, activation="softmax")</li>
+        </ol>
+      </td>
+      <td>Embedding with normal Dense NN Softmax</td>
+      <td>0.71885</td>
+    </tr>
+    <tr>
+      <td>
+        <ol>
+          <li>Bidirectional(CuDNNLSTM(100))</li>
+          <li>Dense(512, activation="relu")</li>
+          <li>Dropout(0.5)</li>
+          <li>Dense(num_classes, activation="softmax")</li>
+        </ol>
+      </td>
+      <td>model 2.0 Embedding with LSTM RNN, training time is freaking longer than others w/o CUDNNLSTM</td>
+      <td>0.7244</td>
+    </tr>
+    <tr>
+      <td>
+        <ol>
+          <li>Bidirectional(CuDNNLSTM(128, return_sequences=True))</li>
+          <li>Bidirectional(CuDNNLSTM(128))</li>
+          <li>Dense(512, activation="relu")</li>
+          <li>Dropout(0.5)</li>
+          <li>Dense(Dense(num_classes, activation="softmax"))</li>
+        </ol>
+      </td>
+      <td>model 2.1, adding two CuDNNLSTM</td>
+      <td>0.73003</td>
+    </tr>
+    <tr>
+      <td>
+        <ol>
+          <li>Bidirectional(CuDNNGRU(128, return_sequences=True))</li>
+          <li>Bidirectional(CuDNNGRU(128))</li>
+          <li>Dense(512, activation="relu")</li>
+          <li>Dropout(0.5)</li>
+          <li>Dense(num_classes, activation="softmax")</li>
+        </ol>
+      </td>
+      <td>model 2.2, after 15 epochs, converges after that</td>
+      <td>0.72782</td>
+    </tr>
+    <tr>
+      <td>
+        <ol>
+          <li>Conv1D(128, 5, activation="relu")</li>
+          <li>GlobalMaxPooling1D()</li>
+          <li>Dense(512, activation="relu")</li>
+          <li>Dropout(0.5)</li>
+          <li>Dense(num_classes, activation="softmax")</li>
+        </ol>
+      </td>
+      <td>model 3: Embedding with Convolutional NN, seems a bit less likely to increase</td>
+      <td>0.71</td>
+    </tr>
+    <tr>
+      <td>
+        <ol>
+          <li>Conv1D(128, 5, activation="relu")</li>
+          <li>MaxPooling1D(5)</li>
+          <li>Conv1D(128, 5, activation="relu")</li>
+          <li>MaxPooling1D(5)</li>
+          <li>Conv1D(128, 5, activation="relu")</li>
+          <li>MaxPooling1D(5)</li>
+          <li>Flatten()</li>
+          <li>Dense(512, activation="relu")</li>
+          <li>Dropout(0.5)</li>
+          <li>Dense(num_classes, activation="softmax")</li>
+        </ol>
+      </td>
+      <td>model 3.1: Embedding with multilevel CNN, very long time to train</td>
+      <td>0.71</td>
+    </tr>
+    <tr>
+      <td>
+        <ol>
+          <li>Embedding()</li>
+          <li>SpatialDropout1D(0.2)</li>
+          <li>Bidirectional(CuDNNLSTM(128, return_sequences=True))</li>
+          <li>Bidirectional(CuDNNLSTM(128, return_sequences=True))</li>
+          <li>Conv1D(256, 5, activation="relu")</li>
+          <li>GlobalMaxPooling1D()</li>
+          <li>Dense(256, activation="relu")</li>
+          <li>Dropout(0.5)</li>
+          <li>Dense(num_classes, activation="softmax")</li>
+        </ol>
+      </td>
+      <td>model 4.0</td>
+      <td>0.73909</td>
+    </tr>
+    <tr>
+      <td>
+        <ol>
+          <li>Embedding()</li>
+          <li>Dropout(0.25)</li>
+          <li>Conv1D(256, 5, activation="relu", padding="valid", strides=1)</li>
+          <li>MaxPooling1D(pool_size=4)</li>
+          <li>CuDNNLSTM(256)</li>
+          <li>Dense(256, activation="relu")</li>
+          <li>Dropout(0.5)</li>
+          <li>Dense(num_classes, activation="softmax")</li>
+        </ol>
+      </td>
+      <td>model 4.1: may stil slightly increase</td>
+      <td>0.734</td>
+    </tr>
+    <tr>
+      <td>
+        <ol>
+          <li>Embedding()</li>
+          <li>Dropout(0.25)</li>
+          <li>TimeDistributed(Conv1D(256, 5, activation="relu", padding="same", strides=1))</li>
+          <li>TimeDistributed(MaxPooling1D(pool_size=4))</li>
+          <li>TimeDistributed(Conv1D(256, 5, activation="relu", padding="same", strides=1))</li>
+          <li>TimeDistributed(MaxPooling1D(pool_size=2))</li>
+          <li>SpatialDropout1D(0.2)</li>
+          <li>Bidirectional(CuDNNLSTM(128, return_sequences=True))</li>
+          <li>Bidirectional(CuDNNLSTM(128, return_sequences=False))</li>
+          <li>Dense(256, activation="relu")</li>
+          <li>Dropout(0.5)</li>
+          <li>Dense(num_classes, activation="softmax")</li>
+        </ol>
+      </td>
+      <td>model 4.2: a bit worse than model 4.0</td>
+      <td>0.724</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ## Submission
 
