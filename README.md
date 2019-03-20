@@ -30,7 +30,7 @@
     </tr>
     <tr>
       <td>Fashion</td>
-      <td></td>
+      <td>0.15789</td>
     </tr>
     <tr>
       <td>Beauty</td>
