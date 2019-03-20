@@ -194,7 +194,7 @@
 
 ## Submission
 
-### Total: 20
+### Total: 21
 <table>
   <thead>
     <tr>
