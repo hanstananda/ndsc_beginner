@@ -67,7 +67,7 @@ except:
 
 # Main settings
 
-max_words = 2500
+max_words = 5000
 max_length = 35
 EMBEDDING_DIM = 300
 plot_history_check = True

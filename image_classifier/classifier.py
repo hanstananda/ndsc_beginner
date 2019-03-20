@@ -27,9 +27,9 @@ all_subcategories.update({k.lower(): v for k, v in categories['Beauty'].items()}
 
 data_root = f"../../{specialization}_image/"
 
-datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
-valid_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
-test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=1. / 255)
+datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=None)
+valid_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=None)
+test_datagen = tf.keras.preprocessing.image.ImageDataGenerator(rescale=None)
 
 feature_extractor_url = "https://tfhub.dev/google/imagenet/mobilenet_v2_100_224/feature_vector/2"
 
