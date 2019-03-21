@@ -1,4 +1,4 @@
-# ndsc_beginner
+# NDSC Beginner Experimental Results and Submissions
 
 ## Image Classifier
 
