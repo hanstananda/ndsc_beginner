@@ -1,4 +1,4 @@
-# ndsc_beginner
+# NDSC Beginner Experimental Results and Submissions
 
 ## Image Classifier
 
@@ -26,15 +26,26 @@
       </td>
       <td rowspan="3">Remove feature Extractor, use Flatten</td>
       <td>Mobile</td>
-      <td>0.018</td>
+      <td>
+        <ul>
+          <li>
+            0.018 (100 data per class)
+          </li>
+        </ul>
+      </td>
     </tr>
     <tr>
       <td>Fashion</td>
-      <td></td>
+      <td>
+        <ul>
+          <li>0.15789 (100 data per class)</li>
+          <li>0.0547 (2000 data per class)</li>
+        </ul>
+      </td>
     </tr>
     <tr>
       <td>Beauty</td>
-      <td></td>
+      <td><i>Not tested</i></td>
     </tr>
   </tbody>
 </table>
