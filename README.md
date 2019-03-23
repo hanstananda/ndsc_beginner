@@ -217,6 +217,60 @@
   </thead>
   <tbody id="submission">
     <tr>
+      <td>res_aggg.csv</td>
+      <td></td>
+      <td>0.76076 :white_check_mark:</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>resepoch_9_5000_03_23_2019_20_40_08.csv</td>
+      <td>Final fine-tuning test from old-classifier.py</td>
+      <td>0.75918</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>res_aggg.csv</td>
+      <td>aggregate of results</td>
+      <td>0.01187</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>resepoch_8_25000_03_22_2019_23_12_47.csv</td>
+      <td>change max word to 25000</td>
+      <td>0.75651</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>resepoch_9_7500_03_21_2019_23_44_38.csv</td>
+      <td>add num words</td>
+      <td>0.75761</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>resepoch_10_5000_03_21_2019_22_40_39.csv</td>
+      <td>Test Add 1 layer Dense</td>
+      <td>0.75850</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>resepoch_9_6000_03_21_2019_02_40_55.csv</td>
+      <td></td>
+      <td>0.75912</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>resepoch_9_5000_03_20_2019_14_01_17.csv</td>
+      <td>Test max words to 5000</td>
+      <td>0.75933 :white_check_mark:</td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>resepoch_9_5000_03_20_2019_14_01_17.csv</td>
+      <td>Test max words to 5000</td>
+      <td>0.75933</td>
+      <td></td>
+    </tr>
+    <tr>
       <td>resepoch_9_2500_03_19_2019_23_13_07.csv</td>
       <td>Change Glove to FastText Embedding</td>
       <td>0.75421</td>
@@ -225,7 +279,7 @@
     <tr>
       <td>submission.csv</td>
       <td>Add 1 flatten layer, 512D</td>
-      <td>0.75873 :white_check_mark:</td>
+      <td>0.75873</td>
       <td></td>
     </tr>
     <tr>
