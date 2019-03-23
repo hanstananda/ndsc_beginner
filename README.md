@@ -297,7 +297,7 @@
     <tr>
       <td>resepoch_9_3500_03_17_2019_18_01_56.csv</td>
       <td>LSTM-&gt;2CNN Glove Cleaned Epoch 9 512D layers</td>
-      <td>0.75738 :white_check_mark:</td>
+      <td>0.75738</td>
       <td></td>
     </tr>
     <tr>
