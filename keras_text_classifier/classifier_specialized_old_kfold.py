@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras_preprocessing.sequence import pad_sequences
 
 from sklearn.utils import shuffle
@@ -77,6 +77,7 @@ submit = False
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
 epochs = 9
+n_folds=10
 
 print(all_subcategories)
 print("no of categories: " + str(len(all_subcategories)))
@@ -230,6 +231,26 @@ def model_gen(num_classes, word_index, embedding_matrix):
     model.summary()
     return model
 
+pat = 3 #this is the number of epochs with no improvment after which the training will stop
+early_stopping = EarlyStopping(monitor='val_loss', patience=pat, verbose=1)
+
+
+def fit_and_evaluate(t_x, val_x, t_y, val_y,type):
+    model= None
+    if type=="fashion":
+        model = model_gen(num_classes_fashion, word_index_fashion, embedding_matrix_fashion)
+    elif type=="beauty":
+        model =model_gen(num_classes_beauty, word_index_beauty, embedding_matrix_beauty)
+    elif type=="mobile":
+        model = model_gen(num_classes_mobile, word_index_mobile, embedding_matrix_mobile)
+    results = model.fit([t_x], t_y,
+                        batch_size=batch_size,
+                        epochs=epochs,
+                        verbose=1,
+                        validation_split=0.1,
+                        callbacks=[early_stopping])
+    print("Val Score: ", model.evaluate(val_x, val_y))
+    return results
 
 model_fashion = model_gen(num_classes_fashion, word_index_fashion, embedding_matrix_fashion)
 model_beauty = model_gen(num_classes_beauty, word_index_beauty, embedding_matrix_beauty)

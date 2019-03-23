@@ -23,6 +23,7 @@ from keras.preprocessing import text, sequence
 from keras import utils
 import pandas as pd
 
+sys.setrecursionlimit(10000)
 
 testData = pd.read_csv("../data/new_test.csv")
 dictData = pd.read_csv("../data/kata_dasar_kbbi.csv")
@@ -67,7 +68,7 @@ except:
 # Main settings
 
 max_words = 5000
-max_length = 35
+max_length = 33
 EMBEDDING_DIM = 300
 plot_history_check = True
 gen_test = True
@@ -76,7 +77,7 @@ submit = False
 # Training for more epochs will likely lead to overfitting on this dataset
 # You can try tweaking these hyperparamaters when using this model with your own data
 batch_size = 256
-epochs = 9
+epochs = 15
 
 print(all_subcategories)
 print("no of categories: " + str(len(all_subcategories)))
@@ -127,7 +128,41 @@ test_data_mobile = testData[testData['image_path'].str.contains("mobile")]
 
 # Shuffle train data
 train_data_fashion = shuffle(train_data_fashion)
+
+df_train_fashion = pd.DataFrame()
+num_train = 2000
+for k, v in inverted_categories_fashion.items():
+    rows = train_data_fashion.loc[train_data_fashion['Category'] == k]
+    num_images = rows.shape[0]
+    if num_train > num_images:
+        nt = int(num_images)
+    else:
+        nt = num_train
+    # print(nt,nv)
+    rows_train = rows[:nt]
+    df_train_fashion = df_train_fashion.append(rows_train)
+train_data_fashion = df_train_fashion
+print(train_data_fashion)
+
+
 train_data_beauty = shuffle(train_data_beauty)
+
+df_train_beauty = pd.DataFrame()
+num_train = 2000
+for k, v in inverted_categories_beauty.items():
+    rows = train_data_beauty.loc[train_data_beauty['Category'] == k]
+    num_images = rows.shape[0]
+    if num_train > num_images:
+        nt = int(num_images)
+    else:
+        nt = num_train
+    # print(nt,nv)
+    rows_train = rows[:nt]
+    df_train_beauty = df_train_beauty.append(rows_train)
+
+train_data_beauty = df_train_beauty
+print(train_data_beauty)
+
 train_data_mobile = shuffle(train_data_mobile)
 
 train_texts_fashion = train_data_fashion['title']
@@ -210,17 +245,15 @@ def model_gen(num_classes, word_index, embedding_matrix):
                         weights=[embedding_matrix],
                         trainable=True))
     model.add(SpatialDropout1D(0.2))
-    model.add(Bidirectional(CuDNNLSTM(1024, return_sequences=True)))
-    model.add(Bidirectional(CuDNNLSTM(1024, return_sequences=True)))
-    model.add(Conv1D(1024, 5, activation='relu'))
-    model.add(MaxPooling1D(pool_size=4))
+    model.add(Bidirectional(CuDNNLSTM(512, return_sequences=True)))
+    model.add(Bidirectional(CuDNNLSTM(512, return_sequences=True)))
     model.add(Conv1D(512, 5, activation='relu'))
+    model.add(MaxPooling1D(pool_size=4))
+    model.add(Conv1D(256, 5, activation='relu'))
     # model.add(MaxPooling1D(pool_size=2))
     model.add(Dropout(0.25))
     model.add(Flatten())
     model.add(Dense(512, activation='relu'))
-    model.add(Dropout(0.25))
-    model.add(Dense(256, activation='relu'))
     # model.add(BatchNormalization())
     model.add(Dropout(0.5))
     model.add(Dense(num_classes, activation='softmax'))
@@ -256,22 +289,22 @@ history_fashion = model_fashion.fit([x_train_fashion], y_train_fashion,
                                     batch_size=batch_size,
                                     epochs=epochs,
                                     verbose=1,
-                                    validation_split=0.05,
-                                    callbacks=[checkpointer_fashion])
+                                    validation_split=0.1,
+                                    shuffle=True)
 
 history_beauty = model_beauty.fit([x_train_beauty], y_train_beauty,
                                   batch_size=batch_size,
                                   epochs=epochs,
                                   verbose=1,
-                                  validation_split=0.05,
-                                  callbacks=[checkpointer_beauty])
+                                  validation_split=0.1,
+                                  shuffle=True)
 
 history_mobile = model_mobile.fit([x_train_mobile], y_train_mobile,
                                   batch_size=batch_size,
                                   epochs=epochs,
                                   verbose=1,
-                                  validation_split=0.05,
-                                  callbacks=[checkpointer_mobile])
+                                  validation_split=0.1,
+                                  shuffle=True)
 
 
 def gen_filename_h5(history):

@@ -124,3 +124,4 @@ data/new_test.csv
 data/new_train.csv
 data/train_with_cname.csv
 data/new_train_with_cname.csv
+data/crawl-*
