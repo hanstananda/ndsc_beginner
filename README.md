@@ -205,7 +205,7 @@
 
 ## Submission
 
-### Total: 21
+### Total: 29
 <table>
   <thead>
     <tr>
@@ -262,12 +262,6 @@
       <td>resepoch_9_5000_03_20_2019_14_01_17.csv</td>
       <td>Test max words to 5000</td>
       <td>0.75933 :white_check_mark:</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>resepoch_9_5000_03_20_2019_14_01_17.csv</td>
-      <td>Test max words to 5000</td>
-      <td>0.75933</td>
       <td></td>
     </tr>
     <tr>
